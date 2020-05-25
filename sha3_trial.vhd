@@ -159,6 +159,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
 
         populateRam: process (clk, fasterclock) is
             variable k : natural;
+            variable loopsize : natural;
         begin
             --- Initialize SRAM ---
             if to_integer(unsigned(counter)) = 0 then
@@ -175,6 +176,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
             elsif to_integer(unsigned(counter)) = 200 then 
                 d1(3 downto 0) <= deleave_d1;
                 d2(3 downto 0) <= deleave_d2;
+                mode <= '0';
                 we <= '0';
                 shift <= '0';
                 ctrl <= "00";
@@ -216,22 +218,22 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                 if clk'event then
                     parclk <= clk;
                 end if;
-            --- Reset Registers ---
-            elsif to_integer(unsigned(counter)) = 215 then
-                parclk <= '0';
-                if clk = '1' then
-                    regreset <= '1';
-                else
-                    regreset <= '0';
-                end if;
             --- Load Slice Blocks ---
-            elsif to_integer(unsigned(counter)) > 215 and to_integer(unsigned(counter)) < 216+19*16 then
+            elsif to_integer(unsigned(counter)) >= 215 and to_integer(unsigned(counter)) <= 234+20*15 then
                 k := 0;
+                loopsize := 20;
                 while (k <= 15) loop
-                    if to_integer(unsigned(counter)) = 216+19*k then 
+                    if to_integer(unsigned(counter)) = 215+loopsize*k then
+                        parclk <= '0';
+                        regclk <= '0';
+                        if not rising_edge(clk) then
+                            regreset <= clk;
+                        end if;
+                    elsif to_integer(unsigned(counter)) = 216+loopsize*k then 
                         d1(3 downto 0) <= deleave_d1;
                         d2(3 downto 0) <= deleave_d2;
                         we <= '0';
+                        mode <= '0';
                         regreset <= '0';
                         shift <= '0';
                         ctrl <= "00";
@@ -241,7 +243,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                         iword <= 199-(15-sliceblock);
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
                         regslc <= "00";
-                    elsif to_integer(unsigned(counter)) >= 215+2+19*k and to_integer(unsigned(counter)) < 215+14+19*k then     -- LOAD SLICE BLOCK
+                    elsif to_integer(unsigned(counter)) >= 215+2+loopsize*k and to_integer(unsigned(counter)) < 215+14+loopsize*k then     -- LOAD SLICE BLOCK
                         d1(3 downto 0) <= deleave_d1;
                         d2(3 downto 0) <= deleave_d2;
                         if clk'event then
@@ -253,7 +255,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                                 iword <= iword - 16;
                             end if;
                         end if;
-                    elsif to_integer(unsigned(counter)) = 215+14+19*k then
+                    elsif to_integer(unsigned(counter)) = 215+14+loopsize*k then
                         d1(3 downto 0) <= deleave_d1;
                         d2(3 downto 0) <= deleave_d2;
                         nword <= (sliceblock rem 2)*4;
@@ -271,14 +273,14 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                             regclk <= clk;
                         end if;
                     -- Apply Theta on Block 0 --
-                    elsif to_integer(unsigned(counter)) = 230+19*k then
+                    elsif to_integer(unsigned(counter)) = 230+loopsize*k then
                         regclk <= '0';
                         regslc <= "00";
                         d1(49 downto 0) <= regslcin(49 downto 0);
                         d2(49 downto 0) <= regslcin(99 downto 50);
                         mode <= '1';
                         shift <= '0';
-                    elsif to_integer(unsigned(counter)) <= 234+19*k and to_integer(unsigned(counter)) > 230+19*k then
+                    elsif to_integer(unsigned(counter)) <= 234+loopsize*k and to_integer(unsigned(counter)) > 230+loopsize*k then
                         if not rising_edge(clk) then
                             regclk <= clk;      -- Theta current slice and store in register
                         end if;
@@ -297,6 +299,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                 end loop;
             else
                 regreset <= '1';
+                byp_theta <= '1';
             end if;
         end process populateRam;
 
