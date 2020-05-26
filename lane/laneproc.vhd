@@ -11,7 +11,8 @@ entity laneproc is port(
     regdwn : in std_logic_vector(63 downto 0);
     ramaddr : out std_logic_vector(8 downto 0);     -- Returns sram address where rho unit contents need to be stored
     ramword : out std_logic_vector(7 downto 0);
-    ramtrig : out std_logic
+    ramtrig : out std_logic;
+    ctrl : in std_logic_vector                      -- Interleaver ctrl logic
 );
 end entity laneproc;
 
@@ -21,7 +22,8 @@ architecture arch_laneproc of laneproc is
     port(
         datain : in std_logic_vector(63 downto 0);
         dataout : out std_logic_vector(3 downto 0);
-        address : in std_logic_vector(3 downto 0)
+        address : in std_logic_vector(3 downto 0);
+        bypass_lane : in std_logic          -- '1' for bypassing lane
     );
     end component;
 
@@ -35,7 +37,8 @@ architecture arch_laneproc of laneproc is
         wordout : out std_logic_vector(7 downto 0);
         bypass_rho : in std_logic;
         clk : in std_logic;
-        resetreg : in std_logic
+        resetreg : in std_logic;
+        leavectrl : in std_logic_vector(1 downto 0)
     );
     end component;
 
@@ -52,18 +55,20 @@ architecture arch_laneproc of laneproc is
     signal rhoclk : std_logic := '0';
     signal state : std_logic_vector(2 downto 0) := "ZZZ";
     signal resetrho : std_logic := '0';
+    signal interleaver_ctrl : std_logic_vector(1 downto 0);
 
     begin
 
         bypass <= bypass_lane;
         reg0 <= regup;
         reg1 <= regdwn;
+        interleaver_ctrl <= ctrl;
         ramword <= outpword;
 
-        muxup : mux64_4 port map(reg0, reg0bits, upaddr);
-        muxdwn : mux64_4 port map(reg1, reg1bits, dwnaddr);
+        muxup : mux64_4 port map(reg0, reg0bits, upaddr, bypass);
+        muxdwn : mux64_4 port map(reg1, reg1bits, dwnaddr, bypass);
 
-        rhoblock : rho port map(reg0bits, reg1bits, rotup, rotdwn, rotdir, outpword, bypass, rhoclk, resetrho);
+        rhoblock : rho port map(reg0bits, reg1bits, rotup, rotdwn, rotdir, outpword, bypass, rhoclk, resetrho, interleaver_ctrl);
 
         laneProcess : process(bypass, clk, cntr, state, lanepair) is
         begin
@@ -73,7 +78,6 @@ architecture arch_laneproc of laneproc is
                 rhoclk <= '0';
                 ramtrig <= '0';
                 rotdir <= '0';
-                ramword <= (others => 'Z');
                 ramaddr <= (others => 'Z');
                 resetrho <= '1';
             else
@@ -99,7 +103,6 @@ architecture arch_laneproc of laneproc is
                     rhoclk <= '0';
                     ramtrig <= '0';
                     rotdir <= '0';
-                    ramword <= (others => 'Z');
                     ramaddr <= (others => 'Z');
                     resetrho <= '1';
                 elsif state = "001" then
@@ -116,7 +119,6 @@ architecture arch_laneproc of laneproc is
                     rhoclk <= '1';
                 elsif state = "100" then
                     rhoclk <= '0';
-                    ramword <= outpword;
                     ramaddr <= std_logic_vector(to_unsigned(8+(to_integer(unsigned(lanepair))-1)*16 + to_integer(unsigned(cntr)), ramaddr'length));
                 elsif state = "101" then
                     ramtrig <= '1';

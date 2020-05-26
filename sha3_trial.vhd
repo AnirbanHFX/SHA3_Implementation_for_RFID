@@ -81,7 +81,8 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
         regdwn : in std_logic_vector(63 downto 0);
         ramaddr : out std_logic_vector(8 downto 0);     -- Returns sram address where rho unit contents need to be stored
         ramword : out std_logic_vector(7 downto 0);
-        ramtrig : out std_logic
+        ramtrig : out std_logic;
+        ctrl : in std_logic_vector                      -- Interleaver ctrl logic
     );
     end component;
 
@@ -102,7 +103,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
     -- register signals --
     signal q1, q2 : std_logic_vector(63 downto 0);
     signal d1, d2 : std_logic_vector(63 downto 0) := (others => '0');
-    signal ctrl : std_logic_vector(1 downto 0) := "00"; 
+    signal ctrl : std_logic_vector(1 downto 0) := "00";     -- Also used for interleaver and deinterleaver
     signal shift, mode : std_logic := '0';
     signal regclk : std_logic := '0';
     signal regreset: std_logic := '0';
@@ -124,6 +125,16 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
     signal byp_theta : std_logic := '1';
     -----------------------------
 
+    -- lane processor signals --
+    signal byp_lane : std_logic := '1';
+    signal rhoclk : std_logic := '0';
+    signal rhocntr : std_logic_vector(3 downto 0) := (others => '0');
+    signal lanepr : std_logic_vector(4 downto 0) := (others => '0');
+    signal ramaddress : std_logic_vector(8 downto 0);
+    signal ramdata : std_logic_vector(7 downto 0);
+    signal ramtrigger : std_logic;
+    ----------------------------
+
     -- Deinterleaver Outputs --
     signal deleave_d1, deleave_d2 : std_logic_vector(3 downto 0);
     ---------------------------
@@ -144,6 +155,8 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
         slcdemux : slicedemux port map(outslice, regslcin, regslc);
         
         sliceprocessor : sliceproc port map (inslice, outslice, slc, rnd, parclk, byp_ixp, byp_theta);
+
+        laneprocessor : laneproc port map (byp_lane, rhoclk, rhocntr, lanepr, q1, q2, ramaddress, ramdata, ramtrigger, ctrl);
 
         inslice <= sliceout;
 
@@ -174,6 +187,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                 end if;
             --- Load Slice Block 15 ---
             elsif to_integer(unsigned(counter)) = 200 then 
+                datain <= (others => 'Z');
                 d1(3 downto 0) <= deleave_d1;
                 d2(3 downto 0) <= deleave_d2;
                 mode <= '0';
@@ -219,11 +233,13 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                     parclk <= clk;
                 end if;
             --- Load Slice Blocks ---
-            elsif to_integer(unsigned(counter)) >= 215 and to_integer(unsigned(counter)) <= 234+20*15 then
+            elsif to_integer(unsigned(counter)) >= 215 and to_integer(unsigned(counter)) <= 248+34*15 then
                 k := 0;
-                loopsize := 20;
+                loopsize := 34;
                 while (k <= 15) loop
                     if to_integer(unsigned(counter)) = 215+loopsize*k then
+                        datain <= (others => 'Z');
+                        we <= '0';
                         parclk <= '0';
                         regclk <= '0';
                         if not rising_edge(clk) then
@@ -290,16 +306,78 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                         end if;
                         d1(49 downto 0) <= regslcin(49 downto 0);
                         d2(49 downto 0) <= regslcin(99 downto 50);
-                        
+                    
                     -- SAVE REGISTER CONTENTS TO SRAM (CAN TRY THIS OUT LATER)
                     -- RESET REGISTER AFTER THETA 
-    
+
+                    elsif to_integer(unsigned(counter)) = 235+loopsize*k then 
+                        ctrl <= "00";
+                        sliceblock <= k;
+                        datain <= ramdata;
+                        iword <= 199-(15-sliceblock);
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        rhocntr <= "1100";
+                    elsif to_integer(unsigned(counter)) >= 236+loopsize*k and to_integer(unsigned(counter)) < 248+loopsize*k then
+                        we <= '1';
+                        datain <= ramdata;
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        if rising_edge(clk) then
+                            if to_integer(unsigned(rhocntr)) > 0 then
+                                rhocntr <= rhocntr - 1;
+                            end if;
+                            if iword - 16 >= 8 then
+                                iword <= iword - 16;
+                            end if;
+                        end if;
+                    elsif to_integer(unsigned(counter)) = 248+loopsize*k then
+                        rhocntr <= (others => '0');
+                        we <= '1';
+                        nword <= (sliceblock rem 2)*4;
+                        datain <= ramdata;
+                        if nword = 4 then
+                            ctrl <= "10";
+                        elsif nword = 0 then
+                            ctrl <= "01";
+                        else
+                            ctrl <= "11";
+                        end if;
+                        shift <= '1';
+                        addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+                    end if;
+                    k := k+1;
+                end loop;
+            elsif to_integer(unsigned(counter)) >= 759 and to_integer(unsigned(counter)) < 758+18 then
+                k := 0;
+                loopsize := 17;
+                while (k <=0) loop
+                    if to_integer(unsigned(counter)) = 759+loopsize*k then     -- LOAD LANE PAIR k
+                        mode <= '0';
+                        ctrl <= "00";
+                        shift <= '0';
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        byp_theta <= '1';
+                        regreset <= '1';
+                        we <= '0';
+                        shift <= '0';
+                        ctrl <= "00";
+                        offset <= 8+(k)*16 + 15; -- 8 + (lanepair - 1)*16 + 15;
+                        addr <= std_logic_vector(to_unsigned(offset, addr'length));
+                    elsif to_integer(unsigned(counter)) >= 759+1+loopsize*k and to_integer(unsigned(counter)) < 759+17+loopsize*k then
+                        regreset <= '0';
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        if not rising_edge(clk) then
+                            regclk <= clk;
+                        end if;
+                        if rising_edge(clk) and to_integer(unsigned(addr)) > 8+k*16 then
+                            addr <= addr - 1;
+                        end if;
                     end if;
                     k := k+1;
                 end loop;
             else
                 regreset <= '1';
-                byp_theta <= '1';
             end if;
         end process populateRam;
 
@@ -316,25 +394,5 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
             --         end if;
             --     end if;
             --     if to_integer(unsigned(counter)) = to_integer(unsigned(countermem))+1 then
-            --         countermem <= counter;
-            --     end if;
-            -- elsif to_integer(unsigned(counter)) = to_integer(unsigned(countermem)) + 1 then     -- LOAD LANE PAIR
-            --     we <= '0';
-            --     shift <= '0';
-            --     ctrl <= "00";
-            --     offset <= 8+15; -- 8 + (lanepair - 1)*16 + 16;
-            --     addr <= std_logic_vector(to_unsigned(offset, addr'length));
-            -- elsif to_integer(unsigned(counter)) >= to_integer(unsigned(countermem))+2 and to_integer(unsigned(counter)) < to_integer(unsigned(countermem))+19 then
-            --     if clk'event then
-            --         if clk = '1' then
-            --             regclk <= '1';
-            --         else
-            --             regclk <= '0';
-            --         end if;
-            --     end if;
-            --     if rising_edge(clk) then
-            --         addr <= addr - 1;
-            --     end if;
-            --     if to_integer(unsigned(counter)) = to_integer(unsigned(countermem)) + 18 then
             --         countermem <= counter;
             --     end if;

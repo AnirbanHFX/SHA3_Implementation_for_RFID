@@ -10,7 +10,8 @@ entity rho is port (
     wordout : out std_logic_vector(7 downto 0);
     bypass_rho : in std_logic;
     clk : in std_logic;
-    resetreg : in std_logic
+    resetreg : in std_logic;
+    leavectrl : in std_logic_vector(1 downto 0)
 );
 end entity rho;
 
@@ -20,7 +21,8 @@ architecture arch_rho of rho is
     port (
         wireout     : out std_logic_vector(7 downto 0);
         wireup      : in std_logic_vector(3 downto 0);
-        wiredown    : in std_logic_vector(3 downto 0)
+        wiredown    : in std_logic_vector(3 downto 0);
+        ctrl        : in std_logic_vector(1 downto 0)
     );
     end component;
 
@@ -48,6 +50,7 @@ architecture arch_rho of rho is
     signal shift1, shift2: std_logic_vector(1 downto 0);
     signal barrel1_in, barrel2_in, barrel1_out, barrel2_out : std_logic_vector(3 downto 0);
     signal leaf1, leaf2 : std_logic_vector(3 downto 0);
+    signal interleaver_ctrl : std_logic_vector(1 downto 0);
     signal clock : std_logic;
     signal reset : std_logic;
 
@@ -55,11 +58,12 @@ architecture arch_rho of rho is
 
         clock <= clk;
         reset <= resetreg;
+        interleaver_ctrl <= leavectrl;
         b1 : barrelshifter port map(barrel1_in, barrel1_out, direction, shift1);
         b2 : barrelshifter port map(barrel2_in, barrel2_out, direction, shift2);
         reg1 : rho_register port map(barrel1_out, rhounit1, clock, reset);
         reg2 : rho_register port map(barrel2_out, rhounit2, clock, reset);
-        leaver : interleave port map(leavedoutput, leaf1, leaf2);
+        leaver : interleave port map(leavedoutput, leaf1, leaf2, interleaver_ctrl);
         wordout <= leavedoutput;
 
         rhoProc : process(r1, r2, rot1, rot2, bypass_rho, clk, dir, rhounit1, rhounit2) is
