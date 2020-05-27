@@ -81,7 +81,9 @@ architecture arch_laneproc of laneproc is
                 ramaddr <= (others => 'Z');
                 resetrho <= '1';
             else
-                if clk'event then
+                if cntr'event and cntr <= "0000" then
+                    state <= (others => '0');
+                elsif clk'event then
                     state <= std_logic_vector(to_unsigned(((to_integer(unsigned(state))+1) rem 6), state'length));
                 end if;
                 if lanepair'event then
@@ -96,8 +98,8 @@ architecture arch_laneproc of laneproc is
             end if;
             if state'event then
                 if state = "000" then
-                    --upaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1))(5 downto 2)))+to_integer(unsigned(cntr))) rem 16, upaddr'length));
-                    --dwnaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1)+1)(5 downto 2)))+to_integer(unsigned(cntr))) rem 16, dwnaddr'length));
+                    upaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1))(5 downto 2)))+to_integer(unsigned(cntr))) rem 16, upaddr'length));
+                    dwnaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1)+1)(5 downto 2)))+to_integer(unsigned(cntr))) rem 16, dwnaddr'length));
                     rotup <= rotc(2*(to_integer(unsigned(lanepair))-1))(1 downto 0);
                     rotdwn <= rotc(2*(to_integer(unsigned(lanepair))-1)+1)(1 downto 0);
                     rhoclk <= '0';
@@ -110,13 +112,17 @@ architecture arch_laneproc of laneproc is
                     rhoclk <= '1';
                 elsif state = "010" then
                     rhoclk <= '0';
-                    upaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(upaddr))+1) rem 16, upaddr'length));
-                    dwnaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(dwnaddr))+1) rem 16, dwnaddr'length));
-                    rotdir <= '1';
-                    rotup <= std_logic_vector(to_unsigned(4 - to_integer(unsigned(rotup)), rotup'length));
-                    rotdwn <= std_logic_vector(to_unsigned(4 - to_integer(unsigned(rotdwn)), rotdwn'length));
+                    if rotup /= "00" and rotdwn /= "00" then   
+                        upaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(upaddr))+1) rem 16, upaddr'length));
+                        dwnaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(dwnaddr))+1) rem 16, dwnaddr'length));
+                        rotdir <= '1';
+                        rotup <= std_logic_vector(to_unsigned(4 - to_integer(unsigned(rotup)), rotup'length));
+                        rotdwn <= std_logic_vector(to_unsigned(4 - to_integer(unsigned(rotdwn)), rotdwn'length));
+                    end if;
                 elsif state = "011" then
-                    rhoclk <= '1';
+                    if rotup /= "00" and rotdwn /= "00" then
+                        rhoclk <= '1';
+                    end if;
                 elsif state = "100" then
                     rhoclk <= '0';
                     ramaddr <= std_logic_vector(to_unsigned(8+(to_integer(unsigned(lanepair))-1)*16 + to_integer(unsigned(cntr)), ramaddr'length));

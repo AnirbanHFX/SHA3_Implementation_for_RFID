@@ -132,6 +132,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
     signal lanepr : std_logic_vector(4 downto 0) := (others => '0');
     signal ramaddress : std_logic_vector(8 downto 0);
     signal ramdata : std_logic_vector(7 downto 0);
+    signal divider : std_logic_vector(1 downto 0);
     signal ramtrigger : std_logic;
     ----------------------------
 
@@ -170,7 +171,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
             end if;
         end process count;
 
-        populateRam: process (clk, fasterclock) is
+        populateRam: process (clk, fasterclock, divider) is
             variable k : natural;
             variable loopsize : natural;
         begin
@@ -346,11 +347,15 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                     end if;
                     k := k+1;
                 end loop;
-            elsif to_integer(unsigned(counter)) >= 759 and to_integer(unsigned(counter)) < 758+18 then
+            elsif to_integer(unsigned(counter)) >= 759 and to_integer(unsigned(counter)) <= 758+66*12 then
                 k := 0;
-                loopsize := 17;
-                while (k <=0) loop
+                loopsize := 66;
+                while (k <= 11) loop
                     if to_integer(unsigned(counter)) = 759+loopsize*k then     -- LOAD LANE PAIR k
+                        divider <= (others => '0');
+                        rhocntr <= (others => '0');
+                        rhoclk <= '0';
+                        byp_lane <= '1';
                         mode <= '0';
                         ctrl <= "00";
                         shift <= '0';
@@ -373,10 +378,27 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                         if rising_edge(clk) and to_integer(unsigned(addr)) > 8+k*16 then
                             addr <= addr - 1;
                         end if;
+                    elsif to_integer(unsigned(counter)) >= 759+17+loopsize*k and to_integer(unsigned(counter)) <= 824+loopsize*k then
+                        rhoclk <= clk;
+                        byp_lane <= '0';
+                        datain <= ramdata;
+                        we <= ramtrigger;
+                        addr <= ramaddress;
+                        lanepr <= std_logic_vector(to_unsigned(k+1, lanepr'length));
+                        if rising_edge(clk) then
+                            divider <= std_logic_vector(to_unsigned((to_integer(unsigned(divider)) + 1) rem 3, divider'length));
+                        end if;
+                        if falling_edge(divider(1)) then
+                            rhocntr <= std_logic_vector(to_unsigned((to_integer(unsigned(rhocntr)) + 1) rem 16, rhocntr'length));
+                        end if;
                     end if;
                     k := k+1;
                 end loop;
             else
+                we <= '0';
+                rhoclk <= '0';
+                datain <= (others => 'Z');
+                byp_lane <= '1';
                 regreset <= '1';
             end if;
         end process populateRam;

@@ -55,7 +55,7 @@ architecture arch_laneproc_tb of laneproc_tb is
             if falling_edge(divider(1)) then
                 count <= std_logic_vector(to_unsigned((to_integer(unsigned(count)) + 1) rem 16, count'length));
             end if;
-            end process counter;
+        end process counter;
 
         testramproc : process (trigger) is
         begin
