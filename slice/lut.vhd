@@ -15,7 +15,9 @@ architecture arch_mux of muxout is
 
         muxproc : process(addr, inp) is
         begin
-            outp <= inp(to_integer(unsigned(addr)));
+            if addr(0) /= 'Z' and addr(1) /= 'Z' and addr(2) /= 'Z' and addr(3) /= 'Z' and addr(4) /= 'Z' and addr(5) /= 'Z' then
+                outp <= inp(to_integer(unsigned(addr)));
+            end if;
         end process muxproc;
     
     end architecture arch_mux;
