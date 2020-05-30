@@ -1,11 +1,13 @@
+-- 63x1 Multiplexer to return a single bit from the 63 bit words of the Look Up Table
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity muxout is port(
-    addr : in std_logic_vector(5 downto 0);
-    inp : in std_logic_vector(63 downto 0);
-    outp : out std_logic
+    addr : in std_logic_vector(5 downto 0);     -- Address = Slice index, chooses which bit to return from each 64 bit word
+    inp : in std_logic_vector(63 downto 0);     -- 64 bit word from LUT
+    outp : out std_logic                        -- Output bit
 );
 end entity muxout;
 
@@ -15,21 +17,23 @@ architecture arch_mux of muxout is
 
         muxproc : process(addr, inp) is
         begin
-            if addr(0) /= 'Z' and addr(1) /= 'Z' and addr(2) /= 'Z' and addr(3) /= 'Z' and addr(4) /= 'Z' and addr(5) /= 'Z' then
+            if addr(0) /= 'Z' and addr(1) /= 'Z' and addr(2) /= 'Z' and addr(3) /= 'Z' and addr(4) /= 'Z' and addr(5) /= 'Z' then   -- Avoid metavalues
                 outp <= inp(to_integer(unsigned(addr)));
             end if;
         end process muxproc;
     
     end architecture arch_mux;
 
+-- Look Up Table storing round constants
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity lut is port (
-    rnd : in std_logic_vector(4 downto 0);
-    slc : in std_logic_vector(5 downto 0);
-    result : out std_logic
+    rnd : in std_logic_vector(4 downto 0);          -- Round index (0-23), serves as address for the lut
+    slc : in std_logic_vector(5 downto 0);          -- Slice index (0-63), serves as address for the mux
+    result : out std_logic                          -- Output bit, connected to Chi-Iota unit
 );
 end entity lut;
 
@@ -37,20 +41,20 @@ architecture arch_lut of lut is
 
     component muxout
     port (
-        addr : in std_logic_vector(5 downto 0);
-        inp : in std_logic_vector(63 downto 0);
-        outp : out std_logic
+        addr : in std_logic_vector(5 downto 0);     -- Address = Slice index, chooses which bit to return from each 64 bit word
+        inp : in std_logic_vector(63 downto 0);     -- 64 bit word from LUT
+        outp : out std_logic                        -- Output bit
     );
     end component;
 
-    signal outp : std_logic_vector(63 downto 0);
-    signal outbit : std_logic;
+    signal outp : std_logic_vector(63 downto 0);    -- LUT word
+    signal outbit : std_logic;                      -- Output bit from mux
 
     begin
 
-        mux : muxout port map (slc, outp, outbit);
+        mux : muxout port map (slc, outp, outbit);  -- Mux instantiation
 
-        lutproc: process(rnd) is
+        lutproc: process(rnd) is        -- Load Round Constants
         begin
             case rnd is
                 when "00000" =>

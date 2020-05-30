@@ -1,10 +1,12 @@
+-- Multiplexer to bypass Theta
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity bypasstheta is port (
-    datain : in std_logic_vector(4 downto 0);
-    dataout : out std_logic_vector(4 downto 0);
-    bypass : in std_logic
+    datain : in std_logic_vector(4 downto 0);       -- Datain = Parity register content xored with Parity of current slice
+    dataout : out std_logic_vector(4 downto 0);     -- Output bits to be xored with current slice
+    bypass : in std_logic                           -- Output bits = '0's if bypass == '1'; output bits = datain if bypass == '0'
 );
 end entity bypasstheta;
 
@@ -23,15 +25,17 @@ architecture arch_bypasstheta of bypasstheta is
 
     end architecture arch_bypasstheta;
 
+-- Overall Theta computation unit
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity Theta is port (
-    slicein : in std_logic_vector(24 downto 0);
-    sliceout : out std_logic_vector(24 downto 0);
-    bypass : in std_logic;
-    prevparity : in std_logic_vector(4 downto 0);
-    curparity : in std_logic_vector(4 downto 0)
+    slicein : in std_logic_vector(24 downto 0);         -- Input slice from Bypass_IXP mux
+    sliceout : out std_logic_vector(24 downto 0);       -- Output slice
+    bypass : in std_logic;                              -- Bypass Theta (control to BypassTheta mux)
+    prevparity : in std_logic_vector(4 downto 0);       -- Input from Parity register (Parity of previous slice)
+    curparity : in std_logic_vector(4 downto 0)         -- Input from Parity unit (Parity of current slice)
 );
 end entity Theta;
 
@@ -39,9 +43,9 @@ architecture arch_Theta of Theta is
 
     component bypasstheta
     port (
-        datain : in std_logic_vector(4 downto 0);
-        dataout : out std_logic_vector(4 downto 0);
-        bypass : in std_logic
+        datain : in std_logic_vector(4 downto 0);       -- Datain = Parity register content xored with Parity of current slice
+        dataout : out std_logic_vector(4 downto 0);     -- Output bits to be xored with current slice
+        bypass : in std_logic                           -- Output bits = '0's if bypass == '1'; output bits = datain if bypass == '0'
     );
     end component;
 
@@ -52,16 +56,16 @@ architecture arch_Theta of Theta is
 
         byp <= bypass;
 
-        C(0) <= curparity(4) xor prevparity(1);
+        C(0) <= curparity(4) xor prevparity(1);         -- XOR parities of current and previous slice
         C(1) <= curparity(0) xor prevparity(2);
         C(2) <= curparity(1) xor prevparity(3);
         C(3) <= curparity(2) xor prevparity(4);
         C(4) <= curparity(3) xor prevparity(0);
 
-        bypasseroftheta : bypasstheta port map(C, D, byp);
+        bypasseroftheta : bypasstheta port map(C, D, byp);      -- Bypass logic
 
-        sliceout(0) <= slicein(0) xor D(0);
-        sliceout(1) <= slicein(1) xor D(0);
+        sliceout(0) <= slicein(0) xor D(0);         -- Theta operation if D = C (byp = '0')
+        sliceout(1) <= slicein(1) xor D(0);         -- Theta is bypassed if D = '0's (byp = '1')
         sliceout(2) <= slicein(2) xor D(0);
         sliceout(3) <= slicein(3) xor D(0);
         sliceout(4) <= slicein(4) xor D(0);

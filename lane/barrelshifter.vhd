@@ -1,11 +1,13 @@
+-- Bi-directional barrel shifter
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity barrelshifter is port(
-    inbits : in std_logic_vector(3 downto 0);
-    outbits : out std_logic_vector(3 downto 0);
-    dir : in std_logic;     -- Direction of shift, '0' = left, '1' = right
-    shift : in std_logic_vector(1 downto 0)     -- Amount of shift
+    inbits : in std_logic_vector(3 downto 0);       -- Input bit-string
+    outbits : out std_logic_vector(3 downto 0);     -- Output bit-string
+    dir : in std_logic;                             -- Direction of shift, '0' = left, '1' = right
+    shift : in std_logic_vector(1 downto 0)         -- Number of bits to shift (0-3)
 );
 end entity barrelshifter;
 
@@ -15,7 +17,7 @@ architecture arch_barrelshifter of barrelshifter is
 
         shiftProc : process (inbits, dir, shift) is
         begin 
-            if dir = '0' then
+            if dir = '0' then       -- Left shift logic
                 if shift = "00" then
                     outbits <= inbits;
                 elsif shift = "01" then
@@ -30,7 +32,7 @@ architecture arch_barrelshifter of barrelshifter is
                 else
                     outbits <= inbits;
                 end if;
-            elsif dir = '1' then
+            elsif dir = '1' then    -- Right shift logic
                 if shift = "00" then
                     outbits <= inbits;
                 elsif shift = "01" then

@@ -1,10 +1,12 @@
+-- 25x100 Slice demultiplexer for writing a slice back to its register positions
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity slicedemux is port (
-    datain : in std_logic_vector(24 downto 0);
-    dataout : out std_logic_vector(99 downto 0);
-    sel : in std_logic_vector(1 downto 0)
+    datain : in std_logic_vector(24 downto 0);         -- Slice output from sliceprocessor unit
+    dataout : out std_logic_vector(99 downto 0);       -- Output connected to parallel inputs of 64 bit registers
+    sel : in std_logic_vector(1 downto 0)              -- Logic for selecting slice (modulo 4)
 );
 end entity slicedemux;
 
@@ -15,7 +17,7 @@ architecture arch_slicedemux of slicedemux is
         slicedemuxproc : process (sel, datain) is
         begin
 
-            if sel = "00" then
+            if sel = "00" then                              -- Slice index = 0 modulo 4
                 dataout(51 downto 50) <= (others => 'Z');
 
                 dataout(0 downto 0) <= datain(0 downto 0);
@@ -92,7 +94,8 @@ architecture arch_slicedemux of slicedemux is
 
                 dataout(96 downto 96) <= datain(24 downto 24);
                 dataout(99 downto 97) <= (others => 'Z');
-            elsif sel = "01" then
+
+            elsif sel = "01" then                           -- Slice index = 1 modulo 4
                 dataout(2 downto 0) <= (others => 'Z');
 
                 dataout(50 downto 50) <= datain(0 downto 0);
@@ -169,7 +172,8 @@ architecture arch_slicedemux of slicedemux is
 
                 dataout(97 downto 97) <= datain(24 downto 24);
                 dataout(99 downto 98) <= (others => 'Z');
-            elsif sel = "10" then
+
+            elsif sel = "10" then                           -- Slice index = 2 modulo 4
                 dataout(0 downto 0) <= (others => 'Z');
                 dataout(53 downto 50) <= (others => 'Z');
 
@@ -247,7 +251,8 @@ architecture arch_slicedemux of slicedemux is
 
                 dataout(98 downto 98) <= datain(24 downto 24);
                 dataout(99 downto 99) <= (others => 'Z');
-            else 
+
+            else                                                -- Slice index = 3 modulo 4
                 dataout(4 downto 0) <= (others => 'Z');
                 dataout(50 downto 50) <= (others => 'Z');
 

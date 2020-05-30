@@ -1,3 +1,5 @@
+-- SHA3 control block
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -9,141 +11,142 @@ end entity sha3_trial_tb;
 architecture arch_sha3_trial_tb of sha3_trial_tb is
 
     component sram port (
-        clk : in std_logic;
-        we : in std_logic;
-        addr: in std_logic_vector(8 downto 0);
-        datain: in std_logic_vector(7 downto 0);
-        dataout: out std_logic_vector(7 downto 0)
+        clk : in std_logic;                         -- RAM clock (data is latched if we = '1' and rising edge appears on clock)
+        we : in std_logic;                          -- Write enable ('1' enables latching of data)
+        addr: in std_logic_vector(8 downto 0);      -- Ram address (0-199 allowed)
+        datain: in std_logic_vector(7 downto 0);    -- Input data
+        dataout: out std_logic_vector(7 downto 0)   -- Output data
     );
     end component;
 
     component register0 port(
-        clk: in std_logic;
-        reset: in std_logic;
-        d: in std_logic_vector(63 downto 0);
-        q: inout std_logic_vector(63 downto 0);
-        mode : in std_logic;        -- '0' = serial in, '1' = parallel in
-        slc : in std_logic_vector(1 downto 0);      -- Select slice
-        shift: in std_logic         -- '0' = shift 4 bits at a time, '1' = shift 2 bits at a time
+        clk: in std_logic;                          -- Register clock
+        reset: in std_logic;                        -- Register reset logic
+        d: in std_logic_vector(63 downto 0);        -- Register parallel input
+        q: inout std_logic_vector(63 downto 0);     -- Register parallel output
+        mode : in std_logic;                        -- Input mode select : '0' = serial in, '1' = parallel in
+        slc : in std_logic_vector(1 downto 0);      -- Select slice, for parallel input of a slice from Slice unit
+        shift: in std_logic                         -- Shift amount logic : '0' = left shift 4 bits, '1' = left shift 2 bits
     );
     end component;
 
     component register1 port(
-        clk: in std_logic;
-        reset: in std_logic;
-        d: in std_logic_vector(63 downto 0);
-        q: inout std_logic_vector(63 downto 0);
-        mode : in std_logic;        -- '0' = serial in, '1' = parallel in
-        slc : in std_logic_vector(1 downto 0);      -- Select slice
-        shift: in std_logic         -- '0' = shift 4 bits at a time, '1' = shift 2 bits at a time
+        clk: in std_logic;                          -- Register clock
+        reset: in std_logic;                        -- Register reset logic
+        d: in std_logic_vector(63 downto 0);        -- Register parallel input
+        q: inout std_logic_vector(63 downto 0);     -- Register parallel output
+        mode : in std_logic;                        -- Input mode select : '0' = serial in, '1' = parallel in
+        slc : in std_logic_vector(1 downto 0);      -- Select slice, for parallel input of a slice from Slice unit
+        shift: in std_logic                         -- Shift amount logic : '0' = left shift 4 bits, '1' = left shift 2 bits
     );
     end component;
 
     component deinterleave port(
-        wirein      : in std_logic_vector(7 downto 0);
-        wireup      : out std_logic_vector(3 downto 0);
-        wiredown    : out std_logic_vector(3 downto 0);
-        ctrl        : in std_logic_vector(1 downto 0)
+        wirein      : in std_logic_vector(7 downto 0);      -- Interleaved input
+        wireup      : out std_logic_vector(3 downto 0);     -- Deinterleaved output to upper register
+        wiredown    : out std_logic_vector(3 downto 0);     -- Deinterleaved output to lower register
+        ctrl        : in std_logic_vector(1 downto 0)       -- Interleaver control logic
     );
     end component;
 
     component slicemux port (
-        datain : in std_logic_vector(99 downto 0);
-        dataout : out std_logic_vector(24 downto 0);
-        sel : in std_logic_vector(1 downto 0)
+        datain : in std_logic_vector(99 downto 0);      -- Input from register outputs
+        dataout : out std_logic_vector(24 downto 0);    -- Slice output
+        sel : in std_logic_vector(1 downto 0)           -- Slice index modulo 4
     );
     end component;
 
     component slicedemux is port (
-        datain : in std_logic_vector(24 downto 0);
-        dataout : out std_logic_vector(99 downto 0);
-        sel : in std_logic_vector(1 downto 0)
+        datain : in std_logic_vector(24 downto 0);         -- Slice output from sliceprocessor unit
+        dataout : out std_logic_vector(99 downto 0);       -- Output connected to parallel inputs of 64 bit registers
+        sel : in std_logic_vector(1 downto 0)              -- Logic for selecting slice (modulo 4)
     );
     end component;
 
     component sliceproc port (
-        slicein : in std_logic_vector(24 downto 0);
-        sliceout : out std_logic_vector(24 downto 0);
-        slice : in std_logic_vector(5 downto 0);    -- For iota
-        roundn : in std_logic_vector(4 downto 0);   -- For iota
-        storeparity : in std_logic;     -- Rising edge causes parity of current slice to be stored in parity register
-        bypass_ixp : in std_logic;      -- Logic 1 bypasses pi, chi, iota
-        bypass_theta : in std_logic     -- Logic 1 bypasses theta
+        slicein : in std_logic_vector(24 downto 0);         -- Input slice from slice-mux
+        sliceout : out std_logic_vector(24 downto 0);       -- Output slice to slice-demux
+        slice : in std_logic_vector(5 downto 0);            -- Round index for Iota stage
+        roundn : in std_logic_vector(4 downto 0);           -- For iota
+        storeparity : in std_logic;                         -- Rising edge causes parity of current slice to be stored in parity register
+        bypass_ixp : in std_logic;                          -- Logic 1 bypasses pi, chi, iota
+        bypass_theta : in std_logic                         -- Logic 1 bypasses theta
     );
     end component;
 
     component laneproc port (
-        bypass_lane : in std_logic;                     -- When used to save slices
-        clk : in std_logic;
-        cntr : in std_logic_vector(3 downto 0);         -- Counter for 16 subsections of each lane
-        lanepair : in std_logic_vector(4 downto 0);
-        regup : in std_logic_vector(63 downto 0);
-        regdwn : in std_logic_vector(63 downto 0);
+        bypass_lane : in std_logic;                     -- '1' when rho is bypassed and laneproc is used to write slices to RAM, '0' when computing rho
+        clk : in std_logic;                             -- Clock input
+        cntr : in std_logic_vector(3 downto 0);         -- When computing rho : cntr addresses 16 register sections, when writing slices : cntr addresses 13 register sections
+        lanepair : in std_logic_vector(4 downto 0);     -- Index identifying the pair of lanes loaded to registers
+        regup : in std_logic_vector(63 downto 0);       -- Output of upper register
+        regdwn : in std_logic_vector(63 downto 0);      -- Output of lower register
         ramaddr : out std_logic_vector(8 downto 0);     -- Returns sram address where rho unit contents need to be stored
-        ramword : out std_logic_vector(7 downto 0);
-        ramtrig : out std_logic;
+        ramword : out std_logic_vector(7 downto 0);     -- Interleaver output - connected to input of RAM
+        ramtrig : out std_logic;                        -- Write Enable logic of RAM
         ctrl : in std_logic_vector                      -- Interleaver ctrl logic
     );
     end component;
 
     type ram_type is array (0 to 199) of std_logic_vector(7 downto 0);
     signal content : ram_type := ("01110101","10011111","11010000","00110101","11011000","11001000","00010011","11101101","01101001","01100011","11101001","00100100","00011000","10010110","11110011","10101110","00110101","01100001","01111111","01000110","01111101","00111110","11100111","00010111","10100001","10110100","00001001","00011111","10101011","11110110","00000011","01011010","10101100","01110100","00011101","00100100","10000011","01110101","10001010","00110001","00001000","01110000","00101011","11010000","11111110","10100011","11001001","11000111","01011110","11100111","01101011","01101111","01101001","01000010","10001000","10001111","00111110","00011011","10010000","01010010","00001101","01110001","10111111","00110101","11000001","11011101","01010010","00101101","01111000","10100101","00001001","01111010","10101000","10010010","00011110","00011110","00011011","10110010","11110000","00011010","11001001","11000011","11111000","11010000","11111101","01100001","00011001","11110110","11010011","10000011","00100111","00110001","10000100","00110001","11010110","01111110","11100100","00100010","00100111","00000000","01110000","11001000","10011001","10000110","10111101","00110010","11010000","01001011","00111000","10101011","01111011","01100111","11101101","01001001","00111110","01100011","01001001","11110110","00001110","10110010","01001010","11111111","00010110","01110101","01010010","01111110","10100101","00111001","10001001","00101100","00000001","00110110","11111010","00111010","00010110","10011000","11011001","00011101","00101000","11000011","00101010","11100111","01001110","11100011","10101101","11111000","11110100","10100010","00100100","10100000","00100000","01100110","11010110","01001010","00010000","00111100","10000011","10011100","10100011","10001110","00001010","01000110","10000111","10111100","01001001","01000001","11001000","00100000","00011100","00110110","11001000","11000011","01010011","11100111","00110011","01000100","01111101","01000001","01111011","01001101","10101000","10000111","01011011","00101001","00111001","10110000","10110000","10100111","11001000","00011110","01000000","11010011","00000111","11011001","01011010","01101000","11010000","01110111","01011010","11100001");
-    signal clk : std_logic := '0'; 
-    signal fasterclock : std_logic := '0';
+    -- Example input to RAM, used for testing output against a reference software implementation
+
+    signal clk : std_logic := '0';                                      -- Clock for controller
+    signal fasterclock : std_logic := '0';                              -- Fast clock used for performing asynchronous calculations by the simulator, not required for synthesis
     
     -- sram signals --
-    signal we : std_logic := '1';
-    signal addr : std_logic_vector(8 downto 0) := (others => '0');
-    signal data, datain : std_logic_vector(7 downto 0) := "01110101";
+    signal we : std_logic := '1';                                       -- Write enable
+    signal addr : std_logic_vector(8 downto 0) := (others => '0');      -- RAM address
+    signal data, datain : std_logic_vector(7 downto 0) := "01110101";   -- Ram input and output ports (initialized to content(0))
     ------------------
 
-    signal counter : std_logic_vector(31 downto 0) := (others => '0');
-    --signal countermem : std_logic_vector(31 downto 0) := (others => '0');
+    signal counter : std_logic_vector(31 downto 0) := (others => '0');  -- Universal counter for timing controller actions
 
     -- register signals --
-    signal q1, q2 : std_logic_vector(63 downto 0);
-    signal d1, d2 : std_logic_vector(63 downto 0) := (others => '0');
-    signal ctrl : std_logic_vector(1 downto 0) := "00";     -- Also used for interleaver and deinterleaver
-    signal shift, mode : std_logic := '0';
-    signal regclk : std_logic := '0';
-    signal regreset: std_logic := '0';
+    signal q1, q2 : std_logic_vector(63 downto 0);                      -- Register outputs
+    signal d1, d2 : std_logic_vector(63 downto 0) := (others => '0');   -- Register inputs 
+    signal ctrl : std_logic_vector(1 downto 0) := "00";                 -- Control logic for selecting register slice, also used for interleaver and deinterleaver
+    signal shift, mode : std_logic := '0';                              -- Shift : '1' - Shift 2 bits, '0' - Shift 4 bits; Mode : '1' - Parallel in, '0' - Serial in
+    signal regclk : std_logic := '0';                                   -- Register clock input
+    signal regreset: std_logic := '0';                                  -- Reset logic
     ----------------------
 
     -- slice mux/demux signals --
-    signal regslc : std_logic_vector(1 downto 0) := "00";
-    signal sliceout : std_logic_vector(24 downto  0);
-    signal regslcin : std_logic_vector(99 downto 0);
-    -----------------------
+    signal regslc : std_logic_vector(1 downto 0) := "00";               -- Slice index modulo 4
+    signal sliceout : std_logic_vector(24 downto  0);                   -- Output slice
+    signal regslcin : std_logic_vector(99 downto 0);                    -- Input from registers
+    -----------------------------
 
     -- slice processor signals --
-    signal inslice : std_logic_vector(24 downto 0);
-    signal outslice : std_logic_vector(24 downto 0);
-    signal slc : std_logic_vector(5 downto 0) := (others => '0');
-    signal rnd : std_logic_vector(4 downto 0) := (others => '0');
-    signal parclk : std_logic := '0';
-    signal byp_ixp : std_logic := '1';
-    signal byp_theta : std_logic := '1';
+    signal inslice : std_logic_vector(24 downto 0);                     -- Input slice
+    signal outslice : std_logic_vector(24 downto 0);                    -- Output slice
+    signal slc : std_logic_vector(5 downto 0) := (others => '0');       -- Slice index (0-63)
+    signal rnd : std_logic_vector(4 downto 0) := (others => '0');       -- Round index (0-23)
+    signal parclk : std_logic := '0';                                   -- Clock to parity register
+    signal byp_ixp : std_logic := '1';                                  -- Bypass logic for Iota, Chi, Pi
+    signal byp_theta : std_logic := '1';                                -- Bypass logic for Theta
     -----------------------------
 
     -- lane processor signals --
-    signal byp_lane : std_logic := '1';
-    signal rhoclk : std_logic := '0';
-    signal rhocntr : std_logic_vector(3 downto 0) := (others => '0');
-    signal lanepr : std_logic_vector(4 downto 0) := (others => '0');
-    signal ramaddress : std_logic_vector(8 downto 0);
-    signal ramdata : std_logic_vector(7 downto 0);
-    signal divider : std_logic_vector(1 downto 0);
-    signal ramtrigger : std_logic;
+    signal byp_lane : std_logic := '1';                                 -- Bypass logic
+    signal rhoclk : std_logic := '0';                                   -- Clock to rho registers
+    signal rhocntr : std_logic_vector(3 downto 0) := (others => '0');   -- Counter for addressing register sections (0-15)
+    signal lanepr : std_logic_vector(4 downto 0) := (others => '0');    -- Lanepair index (1-12)
+    signal ramaddress : std_logic_vector(8 downto 0);                   -- Ram address output (Lane processor computes address where a word must be saved after Rho operation)
+    signal ramdata : std_logic_vector(7 downto 0);                      -- Word to be written to RAM
+    signal divider : std_logic_vector(1 downto 0);                      -- Frequency divider (Counter is incremented after 3 clock cycles)
+    signal ramtrigger : std_logic;                                      -- Trigger connected to write enable of RAM
     ----------------------------
 
     -- Deinterleaver Outputs --
-    signal deleave_d1, deleave_d2 : std_logic_vector(3 downto 0);
+    signal deleave_d1, deleave_d2 : std_logic_vector(3 downto 0); 
     ---------------------------
 
-    constant Period : time := 100 ns;
-    constant fastPeriod : time := 20 ns;
+    constant Period : time := 100 ns;                                   -- Period of internal clock
+    constant fastPeriod : time := 20 ns;                                -- Period of fast clock used for asynchronous computation by simulator
 
-    signal iword, nword, sliceblock, lanepair, offset : natural;
+    signal iword, nword, sliceblock, lanepair, offset : natural;        -- Variables used for various computations
 
     begin
 
@@ -161,18 +164,18 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
 
         inslice <= sliceout;
 
-        clk <= not clk after Period/2;  -- Global clock
-        fasterclock <= not fasterclock after fastPeriod/2;
+        clk <= not clk after Period/2;                                  -- Global clock
+        fasterclock <= not fasterclock after fastPeriod/2;              -- Fast clock for asynchronous computations
 
-        count : process (clk) is
+        count : process (clk) is                                        -- Counter process
         begin
             if (rising_edge(clk)) then
-                counter <= counter + 1; -- Control Unit counter
+                counter <= counter + 1;                                 -- global counter
             end if;
         end process count;
 
-        populateRam: process (clk, fasterclock, divider) is
-            variable k : natural;
+        SHA3: process (clk, fasterclock, divider) is                    -- Sensitive only to clocks and frequency divider
+            variable k : natural;                                       -- Variables used for looping
             variable loopsize : natural;
             variable innerloop : natural;
             variable modifiedrnd : natural;
@@ -351,7 +354,6 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                     end if;
                     k := k+1;
                 end loop;
-            -- FULL THETA OPERATIONS ENDS -- (counter = 758)
 
             -- PERFORM RHO ON ENTIRE STATE --
             elsif to_integer(unsigned(counter)) >= 759 and to_integer(unsigned(counter)) <= 758+66*12 then
@@ -401,18 +403,16 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                     end if;
                     k := k+1;
                 end loop;
-            -- FULL RHO OPERATIONS ENDS -- (counter = 1550)
 
             -- PERFORM 23 CONSECUTIVE MODIFIED ROUNDS OF SHA3 --
-                -- * Pi, Chi, Iota operations on entire state
-                -- * Theta on entire state
+                -- * Pi, Chi, Iota, Theta operations on entire state
                 -- * Rho on entire state
             elsif to_integer(unsigned(counter)) >= 1551 and to_integer(unsigned(counter)) <= 2901+1351*22 then
 
                 loopsize := 1351;
                 modifiedrnd := 0;
                 
-                -- OUTER LOOP FOR EACH ROUND --
+                -- OUTER LOOP FOR REPEATING ROUNDS --
                 while (modifiedrnd <= 22) loop
 
                     --- Load Slice Block 15 ---
@@ -473,7 +473,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                             parclk <= clk;
                         end if;
 
-                    -- COMPUTE THETA,IXP FOR ENTIRE STATE -- 
+                    -- COMPUTE IOTA, CHI, PI, THETA FOR ENTIRE STATE -- 
                     elsif to_integer(unsigned(counter)) >= 1566+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 1599+34*15+loopsize*modifiedrnd then
                         
                         k := 0;
@@ -481,7 +481,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
 
                         while (k <= 15) loop
 
-                            -- Load Slice Block k --        1551 -> 2110 (+559)
+                            -- Load Slice Block k --      
                             if to_integer(unsigned(counter)) = 1566+innerloop*k+loopsize*modifiedrnd then
                                 datain <= (others => 'Z');
                                 we <= '0';
@@ -508,7 +508,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                                 iword <= 199-(15-sliceblock);
                                 addr <= std_logic_vector(to_unsigned(iword, addr'length));
                                 regslc <= "00";
-                            elsif to_integer(unsigned(counter)) >= 1566+2+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 1566+14+innerloop*k+loopsize*modifiedrnd then     -- LOAD SLICE BLOCK
+                            elsif to_integer(unsigned(counter)) >= 1566+2+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 1566+14+innerloop*k+loopsize*modifiedrnd then   
                                 d1(3 downto 0) <= deleave_d1;
                                 d2(3 downto 0) <= deleave_d2;
                                 if clk'event then
@@ -541,7 +541,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                             elsif to_integer(unsigned(counter)) = 1581+innerloop*k+loopsize*modifiedrnd then
                                 regclk <= '0';
                                 regslc <= "00";
-                                byp_ixp <= '0';       -- Bypass Iota, Chi, Pi
+                                byp_ixp <= '0';       -- For computing Iota, Chi, Pi
                                 byp_theta <= '0';     -- For computing Theta
                                 slc <= std_logic_vector(to_unsigned(sliceblock*4+to_integer(unsigned(regslc)), slc'length));
                                 d1(49 downto 0) <= regslcin(49 downto 0);
@@ -551,7 +551,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                             elsif to_integer(unsigned(counter)) <= 1585+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) > 1581+innerloop*k+loopsize*modifiedrnd then
                                 if not rising_edge(clk) then
                                     regclk <= clk;
-                                    parclk <= clk;
+                                    parclk <= clk;    -- Save parity of current slice
                                 end if;
                                 if falling_edge(clk) and to_integer(unsigned(regslc)) < 3 then
                                     regslc <= regslc + 1;
@@ -608,7 +608,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                     elsif to_integer(unsigned(counter)) >= 2110+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 2109+66*12+loopsize*modifiedrnd then
                         k := 0;
                         innerloop := 66;
-                        while (k <= 11) loop                -- 759 -> 2654 (+1895)
+                        while (k <= 11) loop               
                             if to_integer(unsigned(counter)) = 2110+innerloop*k+loopsize*modifiedrnd then     -- LOAD LANE PAIR k
                                 divider <= (others => '0');
                                 rhocntr <= (others => '0');
@@ -662,7 +662,8 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
 
                     modifiedrnd := modifiedrnd + 1;
                 end loop;
-                                        -- 1566 -> 32624 (+31058)
+            
+            -- LAST ROUND OF IOTA, CHI, PI --
             elsif to_integer(unsigned(counter)) >= 32624 and to_integer(unsigned(counter)) <= 32657+34*15 then
                     
                 k := 0;
@@ -793,6 +794,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                     k := k+1;
                 end loop;
 
+            -- END OPERATIONS --
             else
                 we <= '0';
                 rhoclk <= '0';
@@ -804,6 +806,6 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                 byp_lane <= '1';
                 regreset <= '1';
             end if;
-        end process populateRam;
+        end process SHA3;
 
     end architecture arch_sha3_trial_tb;

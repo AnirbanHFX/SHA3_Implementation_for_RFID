@@ -1,9 +1,11 @@
+-- Unit to compute Pi stage
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity pi is port (
-    data : in std_logic_vector(24 downto 0);
-    outp : out std_logic_vector(24 downto 0)
+    data : in std_logic_vector(24 downto 0);    -- Input slice from 100x25 Slice Multiplexer connected to both registers
+    outp : out std_logic_vector(24 downto 0)    -- Output slice fed to Chi_Iota unit
 );
 end entity pi;
 

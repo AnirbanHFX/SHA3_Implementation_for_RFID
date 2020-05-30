@@ -1,11 +1,13 @@
+-- Deinterleaf unit
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
 entity deinterleave is port(
-    wirein      : in std_logic_vector(7 downto 0);
-    wireup      : out std_logic_vector(3 downto 0);
-    wiredown    : out std_logic_vector(3 downto 0);
-    ctrl        : in std_logic_vector(1 downto 0)
+    wirein      : in std_logic_vector(7 downto 0);      -- Interleaved input
+    wireup      : out std_logic_vector(3 downto 0);     -- Deinterleaved output to upper register
+    wiredown    : out std_logic_vector(3 downto 0);     -- Deinterleaved output to lower register
+    ctrl        : in std_logic_vector(1 downto 0)       -- Interleaver control logic
 );
 end entity deinterleave;----------
 
@@ -13,6 +15,10 @@ architecture deinterleave_arc of deinterleave is
 begin
     leave: process (wirein, ctrl) is
     begin
+
+        -- ctrl = "00" is required for reading from interleaved rows (RAM address - 8 to 199)
+        -- ctrl = "01" or "10" are required for reading from the non-interleaved row (RAM address - 0 to 7)
+
         if ctrl = "00" then
             wireup(0) <= wirein(0);
             wiredown(0) <= wirein(1);

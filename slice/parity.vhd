@@ -1,10 +1,12 @@
+-- Parity Register to store parity of previous slice
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity parityreg is port (
-    d : in std_logic_vector(4 downto 0);
-    q : out std_logic_vector(4 downto 0);
-    clk : in std_logic
+    d : in std_logic_vector(4 downto 0);        -- Register input
+    q : out std_logic_vector(4 downto 0);       -- Register output
+    clk : in std_logic                          -- Output latches to Input at rising edge of clk
 );
 end entity parityreg;
 
@@ -21,12 +23,14 @@ architecture arch_parityreg of parityreg is
 
     end architecture arch_parityreg;
 
+-- Unit to compute parities of columns of a slice
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity parity is port (
-    slice : in std_logic_vector(24 downto 0);
-    paritybits : out std_logic_vector(4 downto 0)
+    slice : in std_logic_vector(24 downto 0);       -- Input slice from bypass_IXP mux
+    paritybits : out std_logic_vector(4 downto 0)   -- Output parity bits for each column
 );
 end entity parity;
 

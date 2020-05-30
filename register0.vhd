@@ -1,15 +1,17 @@
+-- Upper 64 bit register
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
 entity register0 is 
 port(
-    clk: in std_logic;
-    reset: in std_logic;
-    d: in std_logic_vector(63 downto 0);
-    q: inout std_logic_vector(63 downto 0);
-    mode : in std_logic;        -- '0' = serial in, '1' = parallel in
-    slc : in std_logic_vector(1 downto 0);      -- Select slice
-    shift: in std_logic         -- '0' = shift 4 bits at a time, '1' = shift 2 bits at a time
+    clk: in std_logic;                          -- Register clock
+    reset: in std_logic;                        -- Register reset logic
+    d: in std_logic_vector(63 downto 0);        -- Register parallel input
+    q: inout std_logic_vector(63 downto 0);     -- Register parallel output
+    mode : in std_logic;                        -- Input mode select : '0' = serial in, '1' = parallel in
+    slc : in std_logic_vector(1 downto 0);      -- Select slice, for parallel input of a slice from Slice unit
+    shift: in std_logic                         -- Shift amount logic : '0' = left shift 4 bits, '1' = left shift 2 bits
 );
 end entity register0;
 
@@ -19,10 +21,10 @@ architecture register0_arc of register0 is
 
         io: process (clk, reset) is
         begin
-            if (reset='1') then
+            if (reset='1') then                 -- Reset register
                 q <= (others => '0');
             elsif (rising_edge(clk)) then
-                if mode = '0' then
+                if mode = '0' then              -- Serial input logic
                     if shift = '0' then
                         q(63 downto 4) <= q(59 downto 0);
                         q(3 downto 0) <= d(3 downto 0);
@@ -30,7 +32,7 @@ architecture register0_arc of register0 is
                         q(63 downto 2) <= q(61 downto 0);
                         q(1 downto 0) <= d(1 downto 0);
                     end if;
-                else
+                else                            -- Parallel input logic of a slice from slice demultiplexer
                     if slc = "00" then
                         q(0 downto 0) <= d(0 downto 0);
                         q(2 downto 2) <= d(2 downto 2);

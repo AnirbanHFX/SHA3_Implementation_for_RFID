@@ -1,12 +1,13 @@
+-- Unit to compute Iota-Chi stages simultaneously
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity chi_iota is port(
-    data : in std_logic_vector(24 downto 0);
-    roundn : in std_logic_vector(4 downto 0);
-    slice : in std_logic_vector(5 downto 0);
-    outp : out std_logic_vector(24 downto 0);
-    xorbitout : out std_logic
+    data : in std_logic_vector(24 downto 0);    -- Input slice from Pi unit
+    roundn : in std_logic_vector(4 downto 0);   -- Round index (0-23)
+    slice : in std_logic_vector(5 downto 0);    -- Slice index (0-63)
+    outp : out std_logic_vector(24 downto 0)    -- Output slice fed Bypass_IXP mux
 );
 end entity chi_iota;
 
@@ -14,21 +15,19 @@ architecture arc_chi_iota of chi_iota is
 
     component lut
     port (
-        rnd : in std_logic_vector(4 downto 0);
-        slc : in std_logic_vector(5 downto 0);
-        result : out std_logic   
+        rnd : in std_logic_vector(4 downto 0);          -- Round index (0-23), serves as address for the lut
+        slc : in std_logic_vector(5 downto 0);          -- Slice index (0-63), serves as address for the mux
+        result : out std_logic                          -- Output xorbit
     );
     end component;
 
     signal rnd : std_logic_vector(4 downto 0);
     signal slc : std_logic_vector(5 downto 0);
-    signal xorbit : std_logic;
+    signal xorbit : std_logic;                  -- Bit to XOR with A[0,0,z] - Iota stage
 
     begin
 
-        lut1 : lut port map(rnd, slc, xorbit);
-
-        xorbitout <= xorbit;
+        lut1 : lut port map(rnd, slc, xorbit);  -- Look Up Table returns xorbit based on round and slice
 
         rnd <= roundn;
         slc <= slice;

@@ -1,12 +1,14 @@
+-- Register addressing multiplexer
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity mux64_4 is 
 port(
-    datain : in std_logic_vector(63 downto 0);
-    dataout : out std_logic_vector(3 downto 0);
-    address : in std_logic_vector(3 downto 0);
-    bypass_lane : in std_logic          -- '1' for bypassing lane
+    datain : in std_logic_vector(63 downto 0);      -- Input from register
+    dataout : out std_logic_vector(3 downto 0);     -- 4 bit register section (may contain only 2 bits when addressing slices)
+    address : in std_logic_vector(3 downto 0);      -- Register section addressing
+    bypass_lane : in std_logic                      -- '1' for bypassing lane (register contains a slice), '0' for processing lane (register contains a lane)
 );
 end entity mux64_4;
 
@@ -15,7 +17,7 @@ begin
 
     mux64_4_proc : process(datain, address, bypass_lane) is
     begin
-        if bypass_lane = '0' then
+        if bypass_lane = '0' then               -- Register addressing when a lane has been loaded
             if address = "0000" then
                 dataout <= datain(3 downto 0);
             elsif address = "0001" then
@@ -51,7 +53,7 @@ begin
             else
                 dataout <= datain(63 downto 60);
             end if;
-        else
+        else                                -- Register addressing when a slice has been loaded
             if address = "0000" then
                 dataout(1 downto 0) <= datain(1 downto 0);
                 dataout(3 downto 2) <= (others => 'Z');

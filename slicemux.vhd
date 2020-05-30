@@ -1,10 +1,12 @@
+-- 100x25 multiplexer for selecting a slice from registers
+
 library ieee;
 use ieee.std_logic_1164.all;
 
 entity slicemux is port (
-    datain : in std_logic_vector(99 downto 0);
-    dataout : out std_logic_vector(24 downto 0);
-    sel : in std_logic_vector(1 downto 0)
+    datain : in std_logic_vector(99 downto 0);      -- Input from register outputs
+    dataout : out std_logic_vector(24 downto 0);    -- Slice output
+    sel : in std_logic_vector(1 downto 0)           -- Slice index modulo 4
 );
 end entity slicemux;
 
@@ -15,7 +17,7 @@ architecture arch_slicemux of slicemux is
         slicemuxproc : process (sel, datain) is
         begin
 
-            if sel = "00" then
+            if sel = "00" then          -- Slice index = 0 modulo 4
                 dataout(0 downto 0) <= datain(0 downto 0);
                 dataout(1 downto 1) <= datain(2 downto 2);
                 dataout(2 downto 2) <= datain(52 downto 52);
@@ -41,7 +43,7 @@ architecture arch_slicemux of slicemux is
                 dataout(22 downto 22) <= datain(92 downto 92);
                 dataout(23 downto 23) <= datain(46 downto 46);
                 dataout(24 downto 24) <= datain(96 downto 96);
-            elsif sel = "01" then
+            elsif sel = "01" then           -- Slice index = 1 modulo 4
                 dataout(0 downto 0) <= datain(50 downto 50);
                 dataout(1 downto 1) <= datain(3 downto 3);
                 dataout(2 downto 2) <= datain(53 downto 53);
@@ -67,7 +69,7 @@ architecture arch_slicemux of slicemux is
                 dataout(22 downto 22) <= datain(93 downto 93);
                 dataout(23 downto 23) <= datain(47 downto 47);
                 dataout(24 downto 24) <= datain(97 downto 97);
-            elsif sel = "10" then
+            elsif sel = "10" then           -- Slice index = 2 modulo 4
                 dataout(0 downto 0) <= datain(1 downto 1);
                 dataout(1 downto 1) <= datain(4 downto 4);
                 dataout(2 downto 2) <= datain(54 downto 54);
@@ -93,7 +95,7 @@ architecture arch_slicemux of slicemux is
                 dataout(22 downto 22) <= datain(94 downto 94);
                 dataout(23 downto 23) <= datain(48 downto 48);
                 dataout(24 downto 24) <= datain(98 downto 98);
-            else 
+            else                            -- Slice index = 3 modulo 4
                 dataout(0 downto 0) <= datain(51 downto 51);
                 dataout(1 downto 1) <= datain(5 downto 5);
                 dataout(2 downto 2) <= datain(55 downto 55);
