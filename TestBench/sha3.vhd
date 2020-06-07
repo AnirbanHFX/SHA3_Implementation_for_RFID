@@ -5,10 +5,17 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity sha3_trial_tb is
-end entity sha3_trial_tb;
+entity sha3_trial is port(
+    clk : in std_logic;                                 -- Global clock
+    sha3_datain : in std_logic_vector(7 downto 0);      -- Input to internal SRAM
+    counter : in std_logic_vector(31 downto 0);         -- Global counter
+    data_addr : in std_logic_vector(8 downto 0);        -- Address input to internal SRAM (Activates after end of conversion)
+    sha3_dataout : out std_logic_vector(7 downto 0);    -- Output from internal SRAM
+    EOC : out std_logic                                 -- Signal indicating end of SHA3 operations (safe to read from RAM)
+);
+end entity sha3_trial;
 
-architecture arch_sha3_trial_tb of sha3_trial_tb is
+architecture arch_sha3_trial of sha3_trial is
 
     component sram port (
         clk : in std_logic;                         -- RAM clock (data is latched if we = '1' and rising edge appears on clock)
@@ -88,20 +95,15 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
     );
     end component;
 
-    type ram_type is array (0 to 199) of std_logic_vector(7 downto 0);
-    signal content : ram_type := ("01110101","10011111","11010000","00110101","11011000","11001000","00010011","11101101","01101001","01100011","11101001","00100100","00011000","10010110","11110011","10101110","00110101","01100001","01111111","01000110","01111101","00111110","11100111","00010111","10100001","10110100","00001001","00011111","10101011","11110110","00000011","01011010","10101100","01110100","00011101","00100100","10000011","01110101","10001010","00110001","00001000","01110000","00101011","11010000","11111110","10100011","11001001","11000111","01011110","11100111","01101011","01101111","01101001","01000010","10001000","10001111","00111110","00011011","10010000","01010010","00001101","01110001","10111111","00110101","11000001","11011101","01010010","00101101","01111000","10100101","00001001","01111010","10101000","10010010","00011110","00011110","00011011","10110010","11110000","00011010","11001001","11000011","11111000","11010000","11111101","01100001","00011001","11110110","11010011","10000011","00100111","00110001","10000100","00110001","11010110","01111110","11100100","00100010","00100111","00000000","01110000","11001000","10011001","10000110","10111101","00110010","11010000","01001011","00111000","10101011","01111011","01100111","11101101","01001001","00111110","01100011","01001001","11110110","00001110","10110010","01001010","11111111","00010110","01110101","01010010","01111110","10100101","00111001","10001001","00101100","00000001","00110110","11111010","00111010","00010110","10011000","11011001","00011101","00101000","11000011","00101010","11100111","01001110","11100011","10101101","11111000","11110100","10100010","00100100","10100000","00100000","01100110","11010110","01001010","00010000","00111100","10000011","10011100","10100011","10001110","00001010","01000110","10000111","10111100","01001001","01000001","11001000","00100000","00011100","00110110","11001000","11000011","01010011","11100111","00110011","01000100","01111101","01000001","01111011","01001101","10101000","10000111","01011011","00101001","00111001","10110000","10110000","10100111","11001000","00011110","01000000","11010011","00000111","11011001","01011010","01101000","11010000","01110111","01011010","11100001");
-    -- Example input to RAM, used for testing output against a reference software implementation
+    signal End_of_Conversion : std_logic := '0';
 
-    signal clk : std_logic := '0';                                      -- Clock for controller
     signal fasterclock : std_logic := '0';                              -- Fast clock used for performing asynchronous calculations by the simulator, not required for synthesis
     
     -- sram signals --
     signal we : std_logic := '1';                                       -- Write enable
     signal addr : std_logic_vector(8 downto 0) := (others => '0');      -- RAM address
-    signal data, datain : std_logic_vector(7 downto 0) := "01110101";   -- Ram input and output ports (initialized to content(0))
+    signal data, datain : std_logic_vector(7 downto 0);                 -- Ram input and output ports (initialized to content(0))
     ------------------
-
-    signal counter : std_logic_vector(31 downto 0) := (others => '0');  -- Universal counter for timing controller actions
 
     -- register signals --
     signal q1, q2 : std_logic_vector(63 downto 0);                      -- Register outputs
@@ -150,6 +152,8 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
 
     begin
 
+        EOC <= End_of_Conversion;                                       -- Signal when SHA3 algorithm is complete
+        sha3_dataout <= data;                                           -- Output RAM words
         ram : sram port map (clk, we, addr, datain, data); 
         r1 : register0 port map (regclk, regreset, d1, q1, mode, regslc, shift);
         r2 : register1 port map (regclk, regreset, d2, q2, mode, regslc, shift);
@@ -164,15 +168,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
 
         inslice <= sliceout;
 
-        clk <= not clk after Period/2;                                  -- Global clock
         fasterclock <= not fasterclock after fastPeriod/2;              -- Fast clock for asynchronous computations
-
-        count : process (clk) is                                        -- Counter process
-        begin
-            if (rising_edge(clk)) then
-                counter <= counter + 1;                                 -- global counter
-            end if;
-        end process count;
 
         SHA3: process (clk, fasterclock, divider) is                    -- Sensitive only to clocks and frequency divider
             variable k : natural;                                       -- Variables used for looping
@@ -184,12 +180,13 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
             if to_integer(unsigned(counter)) = 0 then
                 regreset <= '1';
                 addr <= (others => '0');
+                datain <= sha3_datain;
             elsif to_integer(unsigned(counter)) < 200 then
                 regreset <= '0';
                 we <= '1';
+                datain <= sha3_datain;
                 if falling_edge(clk) then
                     addr <= addr + 1;
-                    datain <= content(to_integer(unsigned(counter)));
                 end if;
             --- Load Slice Block 15 ---
             elsif to_integer(unsigned(counter)) = 200 then 
@@ -805,7 +802,9 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
                 datain <= (others => 'Z');
                 byp_lane <= '1';
                 regreset <= '1';
+                addr <= data_addr;
+                End_of_Conversion <= '1';
             end if;
         end process SHA3;
 
-    end architecture arch_sha3_trial_tb;
+    end architecture arch_sha3_trial;

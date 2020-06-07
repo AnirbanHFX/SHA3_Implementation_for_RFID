@@ -591,16 +591,15 @@ class SHA3:
         Used for testing and debugging
         """
         rampt = open("externalram.txt", "r")
-        filedata = rampt.read()
+        filedata = rampt.readlines()
         rampt.close()
-        filedata = filedata.replace('"',"").strip("(").strip(")").split(",")[0:200]
+        # filedata = filedata.replace('"',"").strip("(").strip(")").split(",")[0:200]
 
         if len(filedata) != 200:
-            print("Incorrect dimensions of filedata")
             print(len(filedata))
             for line in filedata:
                 print(line)
-            return 1
+            raise Exception("Incorrect dimensions of filedata")
 
         for i in range(200):
             for j in range(8):
@@ -666,21 +665,18 @@ class SHA3:
         #
         # P.sram = P.populate(str(input("Enter String - ")))
 
-        # fp = open("debug.txt", "w")
-        # fp.write("(")
-        # for word in P.sram:
-        #     fp.write("\"")
-        #     for i in range(7,-1,-1):
-        #         fp.write("%d"%word[i])
-        #     fp.write("\",")
-        # fp.write(")")
-        # fp.close()
-
         R = Register()
         S = SliceProcessor()
         L = LaneProcessor()
 
         self.readExternalRam(P.sram)
+
+        # fp = open("debug.txt", "w")
+        # for word in P.sram:
+        #     for i in range(7,-1,-1):
+        #         fp.write("%d"%word[i])
+        #     fp.write("\n")
+        # fp.close()
 
         self.fullTheta(P, R, S, L)
         self.fullrho(P, R, S, L)
@@ -699,12 +695,15 @@ class SHA3:
                 print("%X"%aggregate, end='')
             print('')
 
-
-if __name__ == '__main__':
-
+def main():
+    
     sha = SHA3()
 
     #sha.test()      # Reads SRAM state from external text file labelled externalram.txt and prints final RAM state
 
     sha.Keccak()     # SHA3 algorithm simulation
+
+if __name__ == '__main__':
+
+    main()
                 
