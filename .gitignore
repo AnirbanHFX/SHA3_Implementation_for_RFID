@@ -1,5 +1,5 @@
 #modelsim project files
-.mti
-.mpf
-.wlf
+Testbench/*.mti
+Testbench/*.mpf
+Testbench/*.wlf
 TestBench/work/
