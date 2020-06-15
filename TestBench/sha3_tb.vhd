@@ -13,7 +13,7 @@ architecture arch_sha3_trial_tb of sha3_trial_tb is
     component sha3_trial
     port (
         clk : in std_logic;                                 -- Global clock
-        sha3_datain : in std_logic_vector(7 downto 0);      -- Input to internal SRAM
+        sha3_datain : in std_logic_vector(7 downto 0);      -- Input to internal SRAM (must be supplied initial RAM words during counter = 0 to 199)
         counter : in std_logic_vector(31 downto 0);         -- Global counter
         data_addr : in std_logic_vector(8 downto 0);        -- Address input to internal SRAM (Activates after end of conversion)
         sha3_dataout : out std_logic_vector(7 downto 0);    -- Output from internal SRAM
