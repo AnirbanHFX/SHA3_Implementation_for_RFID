@@ -680,11 +680,11 @@ class SHA3:
 
         self.fullTheta(P, R, S, L)
         self.fullrho(P, R, S, L)
-        for i in range(23):
-            self.miniround(P, R, S, L, i)
-            self.fullTheta(P, R, S, L)
-            self.fullrho(P, R, S, L)
-        self.miniround(P, R, S, L, 23)
+        # for i in range(23):
+        #     self.miniround(P, R, S, L, i)
+        #     self.fullTheta(P, R, S, L)
+        #     self.fullrho(P, R, S, L)
+        # self.miniround(P, R, S, L, 23)
 
         for i in range(200):
             print("%d : "%i, end ='')
@@ -699,9 +699,9 @@ def main():
     
     sha = SHA3()
 
-    #sha.test()      # Reads SRAM state from external text file labelled externalram.txt and prints final RAM state
+    sha.test()      # Reads SRAM state from external text file labelled externalram.txt and prints final RAM state
 
-    sha.Keccak()     # SHA3 algorithm simulation
+    #sha.Keccak()     # SHA3 algorithm simulation
 
 if __name__ == '__main__':
 

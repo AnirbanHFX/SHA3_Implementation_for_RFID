@@ -103,7 +103,6 @@ architecture arch_sha3_trial of sha3_trial is
     signal we : std_logic := '1';                                       -- Write enable
     signal addr : std_logic_vector(8 downto 0) := (others => '0');      -- RAM address
     signal data, datain : std_logic_vector(7 downto 0);                 -- Ram input and output ports (initialized to content(0))
-    signal ramclk : std_logic := '0';
     ------------------
 
     -- register signals --
@@ -155,7 +154,7 @@ architecture arch_sha3_trial of sha3_trial is
 
         EOC <= End_of_Conversion;                                       -- Signal when SHA3 algorithm is complete
         sha3_dataout <= data;                                           -- Output RAM words
-        ram : sram port map (ramclk, we, addr, datain, data); 
+        ram : sram port map (clk, we, addr, datain, data); 
         r1 : register0 port map (regclk, regreset, d1, q1, mode, regslc, shift);
         r2 : register1 port map (regclk, regreset, d2, q2, mode, regslc, shift);
         dlv : deinterleave port map (wirein=>data, wireup=>deleave_d1, wiredown=>deleave_d2, ctrl=>ctrl);
@@ -171,7 +170,7 @@ architecture arch_sha3_trial of sha3_trial is
 
         fasterclock <= not fasterclock after fastPeriod/2;              -- Fast clock for asynchronous computations
 
-        SHA3: process (clk, fasterclock, divider, counter, ramtrigger) is                    -- Sensitive only to clocks and frequency divider
+        SHA3: process (clk, fasterclock, divider) is                    -- Sensitive only to clocks and frequency divider
             variable k : natural;                                       -- Variables used for looping
             variable loopsize : natural;
             variable innerloop : natural;
@@ -179,12 +178,10 @@ architecture arch_sha3_trial of sha3_trial is
         begin
             --- Initialize SRAM ---
             if to_integer(unsigned(counter)) = 0 then
-                ramclk <= clk;
                 regreset <= '1';
                 addr <= (others => '0');
                 datain <= sha3_datain;
             elsif to_integer(unsigned(counter)) < 200 then
-                ramclk <= clk;
                 regreset <= '0';
                 we <= '1';
                 datain <= sha3_datain;
@@ -246,7 +243,6 @@ architecture arch_sha3_trial of sha3_trial is
             elsif to_integer(unsigned(counter)) >= 215 and to_integer(unsigned(counter)) <= 248+34*15 then
                 k := 0;
                 loopsize := 34;
-                ramclk <= clk;
                 while (k <= 15) loop
                     if to_integer(unsigned(counter)) = 215+loopsize*k then
                         datain <= (others => 'Z');
@@ -357,14 +353,13 @@ architecture arch_sha3_trial of sha3_trial is
                 end loop;
 
             -- PERFORM RHO ON ENTIRE STATE --
-            elsif to_integer(unsigned(counter)) >= 759 and to_integer(unsigned(counter)) <= 758+51*12 then
+            elsif to_integer(unsigned(counter)) >= 759 and to_integer(unsigned(counter)) <= 758+66*12 then
                 k := 0;
-                loopsize := 51;
+                loopsize := 66;
                 while (k <= 11) loop
                     if to_integer(unsigned(counter)) = 759+loopsize*k then     -- LOAD LANE PAIR k
                         divider <= (others => '0');
                         rhocntr <= (others => '0');
-                        ramclk <= '0';
                         rhoclk <= '0';
                         byp_lane <= '1';
                         mode <= '0';
@@ -389,18 +384,17 @@ architecture arch_sha3_trial of sha3_trial is
                         if rising_edge(clk) and to_integer(unsigned(addr)) > 8+k*16 then
                             addr <= addr - 1;
                         end if;
-                    elsif to_integer(unsigned(counter)) >= 759+17+loopsize*k and to_integer(unsigned(counter)) <= 809+loopsize*k then
+                    elsif to_integer(unsigned(counter)) >= 759+17+loopsize*k and to_integer(unsigned(counter)) <= 824+loopsize*k then
                         rhoclk <= clk;
                         byp_lane <= '0';
-                        we <= '1';
                         datain <= ramdata;
-                        ramclk <= ramtrigger;
+                        we <= ramtrigger;
                         addr <= ramaddress;
                         lanepr <= std_logic_vector(to_unsigned(k+1, lanepr'length));
                         if rising_edge(clk) then
-                            divider <= std_logic_vector(to_unsigned((to_integer(unsigned(divider)) + 1) rem 2, divider'length));
+                            divider <= std_logic_vector(to_unsigned((to_integer(unsigned(divider)) + 1) rem 3, divider'length));
                         end if;
-                        if falling_edge(divider(0)) then
+                        if falling_edge(divider(1)) then
                             rhocntr <= std_logic_vector(to_unsigned((to_integer(unsigned(rhocntr)) + 1) rem 16, rhocntr'length));
                         end if;
                     end if;
@@ -410,7 +404,392 @@ architecture arch_sha3_trial of sha3_trial is
             -- PERFORM 23 CONSECUTIVE MODIFIED ROUNDS OF SHA3 --
                 -- * Pi, Chi, Iota, Theta operations on entire state
                 -- * Rho on entire state
-           
+            elsif to_integer(unsigned(counter)) >= 1551 and to_integer(unsigned(counter)) <= 2901+1351*22 then
+
+                loopsize := 1351;
+                modifiedrnd := 0;
+                
+                -- OUTER LOOP FOR REPEATING ROUNDS --
+                while (modifiedrnd <= 22) loop
+
+                    --- Load Slice Block 15 ---
+                    if to_integer(unsigned(counter)) = 1551+loopsize*modifiedrnd then  -- 200
+                        if rising_edge(clk) and to_integer(unsigned(counter)) /= 1551 then
+                            rnd <= rnd + 1;
+                        end if;
+                        if not rising_edge(clk) then
+                            regreset <= clk;
+                        end if;
+                        datain <= (others => 'Z');
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        byp_lane <= '1';
+                        byp_theta <= '1';
+                        byp_ixp <= '0';
+                        mode <= '0';
+                        we <= '0';
+                        shift <= '0';
+                        ctrl <= "00";
+                        sliceblock <= 15;
+                        iword <= 199-(15-sliceblock);
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        regslc <= "11";
+                        slc <= std_logic_vector(to_unsigned(63, slc'length));
+                    elsif to_integer(unsigned(counter)) >= 1552+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 1564+loopsize*modifiedrnd then
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;     
+                        if clk'event then
+                            regclk <= clk;
+                        end if;
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        if rising_edge(clk) then
+                            if iword - 16 >= 8 then
+                                iword <= iword - 16;
+                            end if;
+                        end if;
+                    elsif to_integer(unsigned(counter)) = 1564+loopsize*modifiedrnd then
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        nword <= (sliceblock rem 2)*4;
+                        if nword = 4 then
+                            ctrl <= "10";
+                        elsif nword = 0 then
+                            ctrl <= "01";
+                        else
+                            ctrl <= "11";
+                        end if;
+                        shift <= '1';
+                        addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+                        if clk'event then
+                            regclk <= clk;
+                        end if;
+                    --- Calculate Parity and store for Slice 63 ---
+                    elsif to_integer(unsigned(counter)) = 1565+loopsize*modifiedrnd then
+                        regclk <= '0';
+                        if clk'event then
+                            parclk <= clk;
+                        end if;
+
+                    -- COMPUTE IOTA, CHI, PI, THETA FOR ENTIRE STATE -- 
+                    elsif to_integer(unsigned(counter)) >= 1566+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 1599+34*15+loopsize*modifiedrnd then
+                        
+                        k := 0;
+                        innerloop := 34;
+
+                        while (k <= 15) loop
+
+                            -- Load Slice Block k --      
+                            if to_integer(unsigned(counter)) = 1566+innerloop*k+loopsize*modifiedrnd then
+                                datain <= (others => 'Z');
+                                we <= '0';
+                                parclk <= '0';
+                                regclk <= '0';
+                                rhoclk <= '0';
+                                byp_lane <= '1';
+                                byp_ixp <= '1';
+                                byp_theta <= '1';
+                                if not rising_edge(clk) then
+                                    regreset <= clk;
+                                end if;
+                            elsif to_integer(unsigned(counter)) = 1567+innerloop*k+loopsize*modifiedrnd then 
+                                d1(3 downto 0) <= deleave_d1;
+                                d2(3 downto 0) <= deleave_d2;
+                                we <= '0';
+                                mode <= '0';
+                                regreset <= '0';
+                                shift <= '0';
+                                ctrl <= "00";
+                                sliceblock <= k;
+                                regclk <= '0';
+                                parclk <= '0';
+                                iword <= 199-(15-sliceblock);
+                                addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                                regslc <= "00";
+                            elsif to_integer(unsigned(counter)) >= 1566+2+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 1566+14+innerloop*k+loopsize*modifiedrnd then   
+                                d1(3 downto 0) <= deleave_d1;
+                                d2(3 downto 0) <= deleave_d2;
+                                if clk'event then
+                                    regclk <= clk;
+                                end if;
+                                addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                                if rising_edge(clk) then
+                                    if iword - 16 >= 8 then
+                                        iword <= iword - 16;
+                                    end if;
+                                end if;
+                            elsif to_integer(unsigned(counter)) = 1566+14+innerloop*k+loopsize*modifiedrnd then
+                                d1(3 downto 0) <= deleave_d1;
+                                d2(3 downto 0) <= deleave_d2;
+                                nword <= (sliceblock rem 2)*4;
+                                if nword = 4 then
+                                    ctrl <= "10";
+                                elsif nword = 0 then
+                                    ctrl <= "01";
+                                else
+                                    ctrl <= "11";
+                                end if;
+                                shift <= '1';
+                                addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+                                if clk'event then
+                                    regclk <= clk;
+                                end if;
+
+                            -- Perform Theta on Block k --
+                            elsif to_integer(unsigned(counter)) = 1581+innerloop*k+loopsize*modifiedrnd then
+                                regclk <= '0';
+                                regslc <= "00";
+                                byp_ixp <= '0';       -- For computing Iota, Chi, Pi
+                                byp_theta <= '0';     -- For computing Theta
+                                slc <= std_logic_vector(to_unsigned(sliceblock*4+to_integer(unsigned(regslc)), slc'length));
+                                d1(49 downto 0) <= regslcin(49 downto 0);
+                                d2(49 downto 0) <= regslcin(99 downto 50);
+                                mode <= '1';
+                                shift <= '0';
+                            elsif to_integer(unsigned(counter)) <= 1585+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) > 1581+innerloop*k+loopsize*modifiedrnd then
+                                if not rising_edge(clk) then
+                                    regclk <= clk;
+                                    parclk <= clk;    -- Save parity of current slice
+                                end if;
+                                if falling_edge(clk) and to_integer(unsigned(regslc)) < 3 then
+                                    regslc <= regslc + 1;
+                                    slc <= slc + 1;
+                                end if;
+                                d1(49 downto 0) <= regslcin(49 downto 0);
+                                d2(49 downto 0) <= regslcin(99 downto 50);
+
+                            -- SAVE REGISTER CONTENTS TO SRAM
+                            elsif to_integer(unsigned(counter)) = 1586+innerloop*k+loopsize*modifiedrnd then
+                                parclk <= '0';
+                                byp_ixp <= '1';
+                                byp_lane <= '1';
+                                byp_theta <= '1';
+                                ctrl <= "00";
+                                sliceblock <= k;
+                                datain <= ramdata;
+                                iword <= 199-(15-sliceblock);
+                                addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                                rhocntr <= "1100";
+                            elsif to_integer(unsigned(counter)) >= 1587+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 1599+innerloop*k+loopsize*modifiedrnd then
+                                we <= '1';
+                                datain <= ramdata;
+                                addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                                if rising_edge(clk) then
+                                    if to_integer(unsigned(rhocntr)) > 0 then
+                                        rhocntr <= rhocntr - 1;
+                                    end if;
+                                    if iword - 16 >= 8 then
+                                        iword <= iword - 16;
+                                    end if;
+                                end if;
+                            elsif to_integer(unsigned(counter)) = 1599+innerloop*k+loopsize*modifiedrnd then
+                                rhocntr <= (others => '0');
+                                we <= '1';
+                                nword <= (sliceblock rem 2)*4;
+                                datain <= ramdata;
+                                if nword = 4 then
+                                    ctrl <= "10";
+                                elsif nword = 0 then
+                                    ctrl <= "01";
+                                else
+                                    ctrl <= "11";
+                                end if;
+                                shift <= '1';
+                                addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+
+                            end if;
+
+                            k := k+1;
+                        end loop;
+
+                    -- COMPUTE RHO FOR ENTIRE STATE --
+                    elsif to_integer(unsigned(counter)) >= 2110+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 2109+66*12+loopsize*modifiedrnd then
+                        k := 0;
+                        innerloop := 66;
+                        while (k <= 11) loop               
+                            if to_integer(unsigned(counter)) = 2110+innerloop*k+loopsize*modifiedrnd then     -- LOAD LANE PAIR k
+                                divider <= (others => '0');
+                                rhocntr <= (others => '0');
+                                parclk <= '0';
+                                rhoclk <= '0';
+                                regclk <= '0';
+                                byp_theta <= '1';
+                                byp_ixp <= '1';
+                                byp_lane <= '1';
+                                mode <= '0';
+                                ctrl <= "00";
+                                shift <= '0';
+                                d1(3 downto 0) <= deleave_d1;
+                                d2(3 downto 0) <= deleave_d2;
+                                byp_theta <= '1';
+                                regreset <= '1';
+                                we <= '0';
+                                shift <= '0';
+                                ctrl <= "00";
+                                offset <= 8+(k)*16 + 15; -- 8 + (lanepair - 1)*16 + 15;
+                                addr <= std_logic_vector(to_unsigned(offset, addr'length));
+                            elsif to_integer(unsigned(counter)) >= 2110+1+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 2110+17+innerloop*k+loopsize*modifiedrnd then
+                                regreset <= '0';
+                                d1(3 downto 0) <= deleave_d1;
+                                d2(3 downto 0) <= deleave_d2;
+                                if not rising_edge(clk) then
+                                    regclk <= clk;
+                                end if;
+                                if rising_edge(clk) and to_integer(unsigned(addr)) > 8+k*16 then
+                                    addr <= addr - 1;
+                                end if;
+                            elsif to_integer(unsigned(counter)) >= 2110+17+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 2175+innerloop*k+loopsize*modifiedrnd then
+                                rhoclk <= clk;
+                                byp_lane <= '0';
+                                datain <= ramdata;
+                                we <= ramtrigger;
+                                addr <= ramaddress;
+                                lanepr <= std_logic_vector(to_unsigned(k+1, lanepr'length));
+                                if rising_edge(clk) then
+                                    divider <= std_logic_vector(to_unsigned((to_integer(unsigned(divider)) + 1) rem 3, divider'length));
+                                end if;
+                                if falling_edge(divider(1)) then
+                                    rhocntr <= std_logic_vector(to_unsigned((to_integer(unsigned(rhocntr)) + 1) rem 16, rhocntr'length));
+                                end if;
+
+                            end if;
+
+                            k := k+1;
+                        end loop;
+                    end if;
+
+                    modifiedrnd := modifiedrnd + 1;
+                end loop;
+            
+            -- LAST ROUND OF IOTA, CHI, PI --
+            elsif to_integer(unsigned(counter)) >= 32624 and to_integer(unsigned(counter)) <= 32657+34*15 then
+                    
+                k := 0;
+                innerloop := 34;
+
+                while (k <= 15) loop
+
+                    -- Load Slice Block k --     
+                    if to_integer(unsigned(counter)) = 32624+innerloop*k then
+                        rnd <= std_logic_vector(to_unsigned(23, rnd'length));
+                        datain <= (others => 'Z');
+                        we <= '0';
+                        parclk <= '0';
+                        regclk <= '0';
+                        rhoclk <= '0';
+                        byp_lane <= '1';
+                        byp_ixp <= '1';
+                        byp_theta <= '1';
+                        if not rising_edge(clk) then
+                            regreset <= clk;
+                        end if;
+                    elsif to_integer(unsigned(counter)) = 32625+innerloop*k then 
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        we <= '0';
+                        mode <= '0';
+                        regreset <= '0';
+                        shift <= '0';
+                        ctrl <= "00";
+                        sliceblock <= k;
+                        regclk <= '0';
+                        parclk <= '0';
+                        iword <= 199-(15-sliceblock);
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        regslc <= "00";
+                    elsif to_integer(unsigned(counter)) >= 32624+2+innerloop*k and to_integer(unsigned(counter)) < 32624+14+innerloop*k then     -- LOAD SLICE BLOCK
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        if clk'event then
+                            regclk <= clk;
+                        end if;
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        if rising_edge(clk) then
+                            if iword - 16 >= 8 then
+                                iword <= iword - 16;
+                            end if;
+                        end if;
+                    elsif to_integer(unsigned(counter)) = 32624+14+innerloop*k then
+                        d1(3 downto 0) <= deleave_d1;
+                        d2(3 downto 0) <= deleave_d2;
+                        nword <= (sliceblock rem 2)*4;
+                        if nword = 4 then
+                            ctrl <= "10";
+                        elsif nword = 0 then
+                            ctrl <= "01";
+                        else
+                            ctrl <= "11";
+                        end if;
+                        shift <= '1';
+                        addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+                        if clk'event then
+                            regclk <= clk;
+                        end if;
+
+                    -- Perform IXP on Block k --
+                    elsif to_integer(unsigned(counter)) = 32639+innerloop*k then
+                        regclk <= '0';
+                        regslc <= "00";
+                        byp_ixp <= '0';       -- Iota, Chi, Pi
+                        byp_theta <= '1';     -- For Bypassing Theta
+                        slc <= std_logic_vector(to_unsigned(sliceblock*4+to_integer(unsigned(regslc)), slc'length));
+                        d1(49 downto 0) <= regslcin(49 downto 0);
+                        d2(49 downto 0) <= regslcin(99 downto 50);
+                        mode <= '1';
+                        shift <= '0';
+                    elsif to_integer(unsigned(counter)) <= 32643+innerloop*k and to_integer(unsigned(counter)) > 32639+innerloop*k then
+                        if not rising_edge(clk) then
+                            regclk <= clk;
+                        end if;
+                        if falling_edge(clk) and to_integer(unsigned(regslc)) < 3 then
+                            regslc <= regslc + 1;
+                            slc <= slc + 1;
+                        end if;
+                        d1(49 downto 0) <= regslcin(49 downto 0);
+                        d2(49 downto 0) <= regslcin(99 downto 50);
+
+                    -- SAVE REGISTER CONTENTS TO SRAM
+                    elsif to_integer(unsigned(counter)) = 32644+innerloop*k then
+                        parclk <= '0';
+                        byp_ixp <= '1';
+                        byp_lane <= '1';
+                        byp_theta <= '1';
+                        ctrl <= "00";
+                        sliceblock <= k;
+                        datain <= ramdata;
+                        iword <= 199-(15-sliceblock);
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        rhocntr <= "1100";
+                    elsif to_integer(unsigned(counter)) >= 32645+innerloop*k and to_integer(unsigned(counter)) < 32657+innerloop*k then
+                        we <= '1';
+                        datain <= ramdata;
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        if rising_edge(clk) then
+                            if to_integer(unsigned(rhocntr)) > 0 then
+                                rhocntr <= rhocntr - 1;
+                            end if;
+                            if iword - 16 >= 8 then
+                                iword <= iword - 16;
+                            end if;
+                        end if;
+                    elsif to_integer(unsigned(counter)) = 32657+innerloop*k then
+                        rhocntr <= (others => '0');
+                        we <= '1';
+                        nword <= (sliceblock rem 2)*4;
+                        datain <= ramdata;
+                        if nword = 4 then
+                            ctrl <= "10";
+                        elsif nword = 0 then
+                            ctrl <= "01";
+                        else
+                            ctrl <= "11";
+                        end if;
+                        shift <= '1';
+                        addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+
+                    end if;
+
+                    k := k+1;
+                end loop;
 
             -- END OPERATIONS --
             else

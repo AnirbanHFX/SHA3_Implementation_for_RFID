@@ -112,11 +112,11 @@ architecture arch_laneproc of laneproc is
                     if start_of_conversion = '1' then
                         ramtrig <= '1';
                     end if;
-                    ramaddr <= (others => 'Z');
                     resetrho <= '1';
                 elsif state = "01" then            -- State 1: XOR bits of current register section into Rho registers after appropriate shift, set start_of_conversion, update shift constants, reverse shift direction, Select next register section
                     start_of_conversion <= '1';     -- Signal start of conversion
                     resetrho <= '0';
+                    ramaddr <= (others => 'Z');
                     ramtrig <= '0';
                     rhoclk <= '1';
                     if rotup /= "00" and rotdwn /= "00" then   
@@ -129,11 +129,11 @@ architecture arch_laneproc of laneproc is
                 elsif state = "10" then            -- State 2: Address RAM
                     ramtrig <= '0';
                     rhoclk <= '0';
-                    ramaddr <= std_logic_vector(to_unsigned(8+(to_integer(unsigned(lanepair))-1)*16 + to_integer(unsigned(cntr)), ramaddr'length));
                 elsif state = "11" then            -- State 3: XOR bits of next register section into Rho registers provided the shift constant is not 0 (not required in this case)
                     if rotup /= "00" and rotdwn /= "00" then
                         rhoclk <= '1';
                     end if;
+                    ramaddr <= std_logic_vector(to_unsigned(8+(to_integer(unsigned(lanepair))-1)*16 + ((to_integer(unsigned(cntr))+1) rem 16), ramaddr'length));
                 end if;
             end if;
         end process laneProcess;
