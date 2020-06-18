@@ -680,11 +680,11 @@ class SHA3:
 
         self.fullTheta(P, R, S, L)
         self.fullrho(P, R, S, L)
-        # for i in range(23):
-        #     self.miniround(P, R, S, L, i)
-        #     self.fullTheta(P, R, S, L)
-        #     self.fullrho(P, R, S, L)
-        # self.miniround(P, R, S, L, 23)
+        for i in range(23):
+            self.miniround(P, R, S, L, i)
+            self.fullTheta(P, R, S, L)
+            self.fullrho(P, R, S, L)
+        self.miniround(P, R, S, L, 23)
 
         for i in range(200):
             print("%d : "%i, end ='')
