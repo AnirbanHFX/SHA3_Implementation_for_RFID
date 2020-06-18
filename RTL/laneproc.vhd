@@ -133,7 +133,7 @@ architecture arch_laneproc of laneproc is
                     if rotup /= "00" and rotdwn /= "00" then
                         rhoclk <= '1';
                     end if;
-                    ramaddr <= std_logic_vector(to_unsigned(8+(to_integer(unsigned(lanepair))-1)*16 + ((to_integer(unsigned(cntr))+1) rem 16), ramaddr'length));
+                    ramaddr <= std_logic_vector(to_unsigned(8+(to_integer(unsigned(lanepair))-1)*16 + ((to_integer(unsigned(cntr))) rem 16), ramaddr'length));
                 end if;
             end if;
         end process laneProcess;

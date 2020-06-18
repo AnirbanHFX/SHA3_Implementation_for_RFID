@@ -171,7 +171,7 @@ architecture arch_sha3_trial of sha3_trial is
 
         fasterclock <= not fasterclock after fastPeriod/2;              -- Fast clock for asynchronous computations
 
-        SHA3: process (clk, fasterclock, divider, counter, ramtrigger) is                    -- Sensitive only to clocks and frequency divider
+        SHA3: process (clk, fasterclock, divider, ramtrigger, counter) is                    -- Sensitive only to clocks and frequency divider
             variable k : natural;                                       -- Variables used for looping
             variable loopsize : natural;
             variable innerloop : natural;
@@ -386,7 +386,7 @@ architecture arch_sha3_trial of sha3_trial is
                         if not rising_edge(clk) then
                             regclk <= clk;
                         end if;
-                        if rising_edge(clk) and to_integer(unsigned(addr)) > 8+k*16 then
+                        if falling_edge(clk) and to_integer(unsigned(addr)) > 8+k*16 then
                             addr <= addr - 1;
                         end if;
                     elsif to_integer(unsigned(counter)) >= 759+17+loopsize*k and to_integer(unsigned(counter)) <= 809+loopsize*k then
