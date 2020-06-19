@@ -410,7 +410,6 @@ architecture arch_sha3_trial of sha3_trial is
             -- PERFORM 23 CONSECUTIVE MODIFIED ROUNDS OF SHA3 --
                 -- * Pi, Chi, Iota, Theta operations on entire state
                 -- * Rho on entire state
-            -- 1551 -> 1371 (-180) ||| (1371 -> 2541 (loopsize = 1171), (prevloop = 1351))
             elsif to_integer(unsigned(counter)) >= 1371 and to_integer(unsigned(counter)) <= 2541+1171*22 then
 
                 loopsize := 1171;
@@ -610,7 +609,6 @@ architecture arch_sha3_trial of sha3_trial is
                         end loop;
 
                     -- COMPUTE RHO FOR ENTIRE STATE --
-                    -- 2110 -> 1930 (-180)
                     elsif to_integer(unsigned(counter)) >= 1930+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 1929+51*12+loopsize*modifiedrnd then
                         k := 0;
                         innerloop := 51;
@@ -672,7 +670,6 @@ architecture arch_sha3_trial of sha3_trial is
                 end loop;
             
             -- LAST ROUND OF IOTA, CHI, PI --
-            -- (32624 -> 28304 (-4320))
             elsif to_integer(unsigned(counter)) >= 28304 and to_integer(unsigned(counter)) <= 28337+34*15 then
                     
                 k := 0;
@@ -803,7 +800,6 @@ architecture arch_sha3_trial of sha3_trial is
 
                     k := k+1;
                 end loop;
-
 
             -- END OPERATIONS --
             else
