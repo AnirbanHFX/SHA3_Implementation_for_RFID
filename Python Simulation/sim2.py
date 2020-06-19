@@ -699,9 +699,9 @@ def main():
     
     sha = SHA3()
 
-    sha.test()      # Reads SRAM state from external text file labelled externalram.txt and prints final RAM state
+    #sha.test()      # Reads SRAM state from external text file labelled externalram.txt and prints final RAM state
 
-    #sha.Keccak()     # SHA3 algorithm simulation
+    sha.Keccak()     # SHA3 algorithm simulation
 
 if __name__ == '__main__':
 

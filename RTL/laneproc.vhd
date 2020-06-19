@@ -85,15 +85,22 @@ architecture arch_laneproc of laneproc is
                 rotdir <= '0';
                 ramaddr <= (others => 'Z');
                 resetrho <= '1';
+                state <= (others => 'Z');
             else                            -- Route lanes through Rho unit and write them back to RAM
                 if cntr'event and cntr <= "0000" then       -- Reset state when counter resets
                     state <= (others => '0');
+                    -- upaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1))(5 downto 2)))+to_integer(unsigned(cntr))) rem 16, upaddr'length));
+                    -- dwnaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1)+1)(5 downto 2)))+to_integer(unsigned(cntr))) rem 16, dwnaddr'length));
+                    -- rotup <= rotc(2*(to_integer(unsigned(lanepair))-1))(1 downto 0);
+                    -- rotdwn <= rotc(2*(to_integer(unsigned(lanepair))-1)+1)(1 downto 0);
                 elsif clk'event then                        -- Advance state modulo 6 with each clock event
                     state <= std_logic_vector(to_unsigned(((to_integer(unsigned(state))+1) rem 4), state'length));
                 end if;
                 if lanepair'event then                      -- Update mux addresses when a new lanepair is loaded
                     upaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1))(5 downto 2)))) rem 16, upaddr'length));
                     dwnaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(2*(to_integer(unsigned(lanepair))-1)+1)(5 downto 2)))) rem 16, dwnaddr'length));
+                    rotup <= rotc(2*(to_integer(unsigned(lanepair))-1))(1 downto 0);
+                    rotdwn <= rotc(2*(to_integer(unsigned(lanepair))-1)+1)(1 downto 0);
                 end if;
             end if;
             if falling_edge(bypass) then                    -- Update mux addresses and reset state when bypass is set to logic '0'
