@@ -32,8 +32,8 @@ class memPopulate:
         for x in range(5):
             for y in range(5):
                 for z in range(64):
-                    #self.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
-                    self.A[x][y][z] = z
+                    self.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
+                    #self.A[x][y][z] = z
                     #self.A[x][y][z] = 10*x+y
                     #self.A[x][y][z] = random.randint(0,1)
         return self.A
@@ -174,19 +174,11 @@ class Register:
         Convert a 200*8 block of SRAM to a 5*5*64 state for printing the result
         """
         A = numpy.zeros(shape=(5,5,64), dtype=int)
-        for i in range(13):
-            self.loadLanePair(i, sram)
-            if i == 0:
+        for i in range(5):
+            for j in range(5):
+                self.loadLane(5*i+j, sram)
                 for z in range(64):
-                    A[0][0][z] = self.R[0][z]
-            else:
-                x1 = int((2*i-1)/5)
-                y1 = (2*i-1)%5
-                x2 = int((2*i)/5)
-                y2 = (2*i)%5
-                for z in range(64):
-                    A[x1][y1][z] = self.R[0][z]
-                    A[x2][y2][z] = self.R[1][z]
+                    A[i][j][z] = self.R[z]
         return A
 
     def cleanRam(self, sram):
@@ -337,7 +329,7 @@ class LaneProcessor:
         self.rotc = [1, 3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
 		             27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44 ]
                      #Keccak rotation offsets
-        self.rhounit = numpy.zeros(shape=(2,4), dtype=int)
+        self.rhounit = numpy.zeros(shape=(4), dtype=int)
 
     def shift_array_left(self, array, bits, size):
         """
@@ -386,48 +378,121 @@ class LaneProcessor:
         Lane(0,0) is omitted since it requires no rotation
         """
         if (lane > 0):
-            offset = 8 + (math.ceil(lane/2)-1)*16            # Offset points to initial SRAM address
-            rot1 = self.rotc[lane]        # Rotation constant
+            offset = 8 + (math.ceil(lane/2.0)-1)*16            # Offset points to initial SRAM address
+            rot1 = self.rotc[lane-1]        # Rotation constant
             rot1lowerbits = rot1%4                  # Extract lower 2 bits of rotation constant for first lane (fed to Barrel Shifter)
             rot1upperbits = int(rot1/4)             # Extract upper 4 bits of rotation constant for first lane (for register addressing)
 
             temp00 = numpy.zeros(shape=(4,), dtype=int)     # Temporary arrays for simulating Barrel Shifter (not required for hardware implementation)
-            temp01 = numpy.zeros(shape=(4,), dtype=int)
             temp10 = numpy.zeros(shape=(4,), dtype=int)
-            temp11 = numpy.zeros(shape=(4,), dtype=int)
 
             for r in range(16):                     # Iterate through all 16 register sections
             
                 for i in range(4):                  # Read register section
                     temp00[i] = R[4*rot1upperbits+i]
-                    temp01[i] = -1                  # -1 indicates High Z 
+
                 temp00 = self.shift_array_left(temp00, rot1lowerbits, 4)    # Shift left using Barrel Shifter
 
-                self.rhounit[0] = self.xor_arrays(temp00, [0])              # XOR shifted data in Rho Unit register
-                #self.rhounit[1] = self.xor_arrays(temp01, [0])
+                self.rhounit = self.xor_arrays(temp00, [0])              # XOR shifted data in Rho Unit register
 
-                if len(self.rhounit[0]) != 4:
+                if len(self.rhounit) != 4:
                     print("Rho Units corrupted during left shift")
                     sys.exit()
 
                 for i in range(4):                  # Read next register section
                     temp10[i] = R[4*((rot1upperbits+1)%16)+i]
-                    temp11[i] = -1                  # -1 indicates High Z
+
                 temp10 = self.shift_array_right(temp10, 4-rot1lowerbits, 4) # Shift right using Barrel Shifter
-                #temp11 = self.shift_array_right(temp11, 4-rot2lowerbits, 4)
-                self.rhounit[0] = self.xor_arrays(self.rhounit[0], temp10)  # XOR shifter data in Rho Unit registers
-                #self.rhounit[1] = self.xor_arrays(self.rhounit[1], temp11)
-                if len(self.rhounit[0]) != 4:
+                self.rhounit = self.xor_arrays(self.rhounit, temp10)  # XOR shifter data in Rho Unit register
+                if len(self.rhounit) != 4:
                     print("Rho Units corrupted during right shift")
                     sys.exit()
 
                 for i in range(4):                  # Interleave contents of Rho Unit registers and save to appropriate SRAM address
-                    if not lane%2:
-                        sram[offset+r][2*i] = self.rhounit[0][i]
+                    if lane%2:
+                        sram[offset+r][2*i] = self.rhounit[i]
                     else:
-                        sram[offset+r][2*i+1] = self.rhounit[0][i]
+                        sram[offset+r][2*i+1] = self.rhounit[i]
 
                 rot1upperbits = (rot1upperbits+1)%16       # Increment register addresses
+
+class referenceImplementation:
+
+    """
+    Reference SHA-3 implementation to test output
+    """
+
+    def __init__(self, state):
+        self.A = numpy.zeros(shape=(5,5,64), dtype=int)
+        self.B = numpy.zeros(shape=(5,5,64), dtype=int)
+        for i in range(5):
+            for j in range(5):
+                for k in range(64):
+                    self.A[i][j][k] = state[i][j][k]
+        self.rotc = [0, 1, 3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+		             27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44 ]
+        self.RC = [ "0000000000000000000000000000000000000000000000000000000000000001",
+                    "0000000000000000000000000000000000000000000000001000000010000010",
+                    "1000000000000000000000000000000000000000000000001000000010001010",
+                    "1000000000000000000000000000000010000000000000001000000000000000",
+                    "0000000000000000000000000000000000000000000000001000000010001011",
+                    "0000000000000000000000000000000010000000000000000000000000000001",
+                    "1000000000000000000000000000000010000000000000001000000010000001",
+                    "1000000000000000000000000000000000000000000000001000000000001001",
+                    "0000000000000000000000000000000000000000000000000000000010001010",
+                    "0000000000000000000000000000000000000000000000000000000010001000",
+                    "0000000000000000000000000000000010000000000000001000000000001001",
+                    "0000000000000000000000000000000010000000000000000000000000001010",
+                    "0000000000000000000000000000000010000000000000001000000010001011",
+                    "1000000000000000000000000000000000000000000000000000000010001011",
+                    "1000000000000000000000000000000000000000000000001000000010001001",
+                    "1000000000000000000000000000000000000000000000001000000000000011",
+                    "1000000000000000000000000000000000000000000000001000000000000010",
+                    "1000000000000000000000000000000000000000000000000000000010000000",
+                    "0000000000000000000000000000000000000000000000001000000000001010",
+                    "1000000000000000000000000000000010000000000000000000000000001010",
+                    "1000000000000000000000000000000010000000000000001000000010000001",
+                    "1000000000000000000000000000000000000000000000001000000010000000",
+                    "0000000000000000000000000000000010000000000000000000000000000001",
+                    "1000000000000000000000000000000010000000000000001000000000001000" ]
+
+    def theta(self):
+        C = numpy.zeros(shape=(5, 64), dtype=int)
+        D = numpy.zeros(shape=(5, 64), dtype=int)
+        for z in range(64):
+            for x in range(5):
+                C[x][z] = self.A[x][0][z] ^ self.A[x][1][z] ^ self.A[x][2][z] ^ self.A[x][3][z] ^ self.A[x][4][z]
+        for z in range(64): 
+            for x in range(5):
+                D[x][z] = C[(x-1)%5][z] ^ C[(x+1)%5][(z-1)%64]
+        for z in range(64):
+            for x in range(5):
+                for y in range(5):
+                    self.A[x][y][z] = self.A[x][y][z] ^ D[x][z]
+    
+    def rhopi(self):
+        for x in range(5):
+            for y in range(5):
+                self.B[y][(2*x+3*y)%5] = numpy.roll(self.A[x][y], 64-self.rotc[5*x+y])
+
+    def chi(self, z):
+        for x in range(5):
+            for y in range(5):
+                    self.A[x][y][z] = self.B[x][y][z] ^ ((~self.B[(x+1)%5][y][z]) & self.B[(x+2)%5][y][z])
+
+    def iota(self, z, rnd):
+        self.A[0][0][z] = self.A[0][0][z] ^ int(self.RC[rnd][64-z-1])
+
+    def Keccak(self):
+
+        for i in range(24):
+            self.theta()
+            self.rhopi()
+            for z in range(64):
+                self.chi(z)
+            for z in range(64):
+                self.iota(z, i)
+
 
 class SHA3:
     """
@@ -435,6 +500,116 @@ class SHA3:
     """
     def __init__(self):
         self.nothing = 0
+
+    def fullTheta(self, P, R, S, L):
+        """
+        Load slice blocks sequentially and apply Theta stage on entire state
+        """
+        R.loadSliceBlock(31, P.sram)
+        S.storeParity(R.R, 63)
+        for i in range(64):
+            if (i%2 == 0):
+                R.loadSliceBlock(int(i/2), P.sram)
+            S.storeParity(R.R, i)
+            S.theta(R.R, i)
+            if (i%2 == 1):
+                R.saveSliceBlock(int(i/2), P.sram)
+
+    def fullrho(self, P, R, S, L):
+        """
+        Load lane pairs sequentially and apply Rho stage of entire state
+        """
+        for i in range(1, 25):
+            R.loadLane(i, P.sram)
+            L.rho(R.R, i, P.sram)
+
+    def miniround(self, P, R, S, L, rnd):
+        """
+        Modified round
+        Apply Pi, Chi and Iota stages on entire state
+        """
+        for i in range(64):
+            if (i%2 == 0):
+                R.loadSliceBlock(int(i/2), P.sram)
+            S.pi(R.R, i)
+            S.chi(R.R, i)
+            S.iota(R.R, i, rnd)
+            if (i%2 == 1):
+                R.saveSliceBlock(int(i/2), P.sram)
+
+    def readExternalRam(self, sram):
+        """
+        Read SRAM state from external text file
+        Used for testing and debugging
+        """
+        rampt = open("externalram.txt", "r")
+        filedata = rampt.readlines()
+        rampt.close()
+        # filedata = filedata.replace('"',"").strip("(").strip(")").split(",")[0:200]
+
+        if len(filedata) != 200:
+            print(len(filedata))
+            for line in filedata:
+                print(line)
+            raise Exception("Incorrect dimensions of filedata")
+
+        for i in range(200):
+            for j in range(8):
+                sram[i][8-j-1] = int(filedata[i][j])
+
+    def Keccak(self):
+        """
+        Function to implement overall algorithm, output the final state and compare it to the standard implementation
+        """
+        P = memPopulate()
+        P.sram = P.populate(str(input("Enter String - ")))
+
+        R = Register()
+        S = SliceProcessor()
+        L = LaneProcessor()
+
+        A = R.MemToState(P.sram)
+        for i in range(5):
+            for j in range(5):
+                for k in range(64):
+                    if A[i][j][k] != P.A[i][j][k]:
+                        print("Mismatch")
+                        sys.exit()
+
+        self.fullTheta(P, R, S, L)
+        self.fullrho(P, R, S, L)
+        for i in range(23):
+            self.miniround(P, R, S, L, i)
+            self.fullTheta(P, R, S, L)
+            self.fullrho(P, R, S, L)
+        self.miniround(P, R, S, L, 23)
+
+        tempram = numpy.zeros(shape=(200, 8), dtype=int)
+        for i in range(200):
+            for j in range(8):
+                tempram[i][j] = P.sram[i][j]
+
+        I = referenceImplementation(P.A)
+        I.Keccak()              #Reference implementation
+        P.StateToMem(I.A)       #Convert reference implementation output state to SRAM format for comparison
+
+        #Compare contents of SRAM with reference
+        for i in range(200):
+            for j in range(8):
+                if P.sram[i][j] != tempram[i][j]:
+                    print("State does not match with reference")
+                    sys.exit()
+
+        print("Output state matched with reference")
+
+        A = R.MemToState(tempram)
+
+        print("Output state - ")
+        for i in range(5):
+            for j in range(5):
+                for k in range(64):
+                    print(A[i][j][k], end='')
+                print("")
 
     def test(self):
 
@@ -460,7 +635,8 @@ class SHA3:
 def main():
 
     sha = SHA3()
-    sha.test()
+    #sha.test()
+    sha.Keccak()
 
 if __name__ == '__main__':
     main()
