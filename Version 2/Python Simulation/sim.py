@@ -1,6 +1,7 @@
 import numpy
 import sys
 import random
+import math
 
 class memPopulate:
     """ 
@@ -326,6 +327,108 @@ class SliceProcessor:
             self.curslice = nslice
         R[self.x[0][0]] = R[self.x[0][0]] ^ int(self.RC[rnd][64-nslice-1])
 
+class LaneProcessor:
+
+    """
+    Contains functions that simulate lane wise operations for the given datapath and constraints
+    """
+
+    def __init__(self):
+        self.rotc = [1, 3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+		             27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44 ]
+                     #Keccak rotation offsets
+        self.rhounit = numpy.zeros(shape=(2,4), dtype=int)
+
+    def shift_array_left(self, array, bits, size):
+        """
+        Simulates left shifting of an array using a Barrel Shifter
+        """
+        newarray = numpy.zeros(shape=(size,), dtype=int)
+        for i in range(size):
+            if (bits+i < size):
+                newarray[i] = array[bits+i]
+            else:
+                break
+        return newarray
+
+    def shift_array_right(self, array, bits, size):
+        """
+        Simulates right shifting of an array using a Barrel Shifter
+        """
+        newarray = numpy.zeros(shape=(size,), dtype=int)
+        for i in range(size-1, -1, -1):
+            if(i-bits >= 0):
+                newarray[i] = array[i-bits]
+            else:
+                break
+        return newarray
+
+    def xor_arrays(self, array1, array2):
+        """
+        XOR two arrays
+        """
+        sizemax = len(array1)
+        if len(array2) > sizemax:
+            sizemax = len(array2)
+        newarray = numpy.zeros(shape=(sizemax,), dtype=int)
+        for i in range(sizemax):
+            if i<len(array1) and i<len(array2):
+                newarray[i] = array1[i] ^ array2[i]
+            elif i<len(array1):
+                newarray[i] = array1[i]
+            else:
+                newarray[i] = array2[i]
+        return newarray
+
+    def rho(self, R, lane, sram):
+        """
+        Applies Rho stage on a lane
+        Lane(0,0) is omitted since it requires no rotation
+        """
+        if (lane > 0):
+            offset = 8 + (math.ceil(lane/2)-1)*16            # Offset points to initial SRAM address
+            rot1 = self.rotc[lane]        # Rotation constant
+            rot1lowerbits = rot1%4                  # Extract lower 2 bits of rotation constant for first lane (fed to Barrel Shifter)
+            rot1upperbits = int(rot1/4)             # Extract upper 4 bits of rotation constant for first lane (for register addressing)
+
+            temp00 = numpy.zeros(shape=(4,), dtype=int)     # Temporary arrays for simulating Barrel Shifter (not required for hardware implementation)
+            temp01 = numpy.zeros(shape=(4,), dtype=int)
+            temp10 = numpy.zeros(shape=(4,), dtype=int)
+            temp11 = numpy.zeros(shape=(4,), dtype=int)
+
+            for r in range(16):                     # Iterate through all 16 register sections
+            
+                for i in range(4):                  # Read register section
+                    temp00[i] = R[4*rot1upperbits+i]
+                    temp01[i] = -1                  # -1 indicates High Z 
+                temp00 = self.shift_array_left(temp00, rot1lowerbits, 4)    # Shift left using Barrel Shifter
+
+                self.rhounit[0] = self.xor_arrays(temp00, [0])              # XOR shifted data in Rho Unit register
+                #self.rhounit[1] = self.xor_arrays(temp01, [0])
+
+                if len(self.rhounit[0]) != 4:
+                    print("Rho Units corrupted during left shift")
+                    sys.exit()
+
+                for i in range(4):                  # Read next register section
+                    temp10[i] = R[4*((rot1upperbits+1)%16)+i]
+                    temp11[i] = -1                  # -1 indicates High Z
+                temp10 = self.shift_array_right(temp10, 4-rot1lowerbits, 4) # Shift right using Barrel Shifter
+                #temp11 = self.shift_array_right(temp11, 4-rot2lowerbits, 4)
+                self.rhounit[0] = self.xor_arrays(self.rhounit[0], temp10)  # XOR shifter data in Rho Unit registers
+                #self.rhounit[1] = self.xor_arrays(self.rhounit[1], temp11)
+                if len(self.rhounit[0]) != 4:
+                    print("Rho Units corrupted during right shift")
+                    sys.exit()
+
+                for i in range(4):                  # Interleave contents of Rho Unit registers and save to appropriate SRAM address
+                    if not lane%2:
+                        sram[offset+r][2*i] = self.rhounit[0][i]
+                    else:
+                        sram[offset+r][2*i+1] = self.rhounit[0][i]
+
+                rot1upperbits = (rot1upperbits+1)%16       # Increment register addresses
+
 class SHA3:
     """
     Class for calling lanewise and slicewise operations and implement overall algorithm
@@ -338,6 +441,7 @@ class SHA3:
         P = memPopulate()
         R = Register()
         S = SliceProcessor()
+        L = LaneProcessor()
 
         P.sram = P.populate(str(input("Enter String - ")))
 
@@ -347,8 +451,7 @@ class SHA3:
         #     print("")
 
         R.loadSliceBlock(1, P.sram)
-
-        print('')
+        L.rho(R.R, 1, P.sram)
 
         for i in range(63, -1, -1):
             print("%2d"%R.R[i], end=' ')
