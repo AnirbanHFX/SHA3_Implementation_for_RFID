@@ -32,8 +32,8 @@ class memPopulate:
             for y in range(5):
                 for z in range(64):
                     #self.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
-                    #self.A[x][y][z] = z
-                    self.A[x][y][z] = 10*x+y
+                    self.A[x][y][z] = z
+                    #self.A[x][y][z] = 10*x+y
                     #self.A[x][y][z] = random.randint(0,1)
         return self.A
 
@@ -195,7 +195,136 @@ class Register:
         for i in range(200):
             for j in range(8):
                 sram[i][j] = 0
-        
+
+class SliceProcessor:
+    
+    """
+    Contains functions that simulate slice wise operations using given datapath and constraints
+    """
+
+    def __init__(self):
+        self.ParityReg = numpy.zeros(shape=(5,), dtype=int)     #Parity register used for Theta step
+        self.tempParityReg = numpy.zeros(shape=(5,), dtype=int)
+        self.x = numpy.zeros(shape=(5,5), dtype=int)            #Contains indices of slices in the registers when a slice is loaded
+        self.curslice = -1                                      #Index of current slice block in registers
+        self.temp = numpy.zeros(shape=(5,5), dtype=int)         #Temporary array used for updating slices sequentially in the simulation (will not be required during parallel updates in hardware)
+        self.RC = [ "0000000000000000000000000000000000000000000000000000000000000001",
+                    "0000000000000000000000000000000000000000000000001000000010000010",
+                    "1000000000000000000000000000000000000000000000001000000010001010",
+                    "1000000000000000000000000000000010000000000000001000000000000000",
+                    "0000000000000000000000000000000000000000000000001000000010001011",
+                    "0000000000000000000000000000000010000000000000000000000000000001",
+                    "1000000000000000000000000000000010000000000000001000000010000001",
+                    "1000000000000000000000000000000000000000000000001000000000001001",
+                    "0000000000000000000000000000000000000000000000000000000010001010",
+                    "0000000000000000000000000000000000000000000000000000000010001000",
+                    "0000000000000000000000000000000010000000000000001000000000001001",
+                    "0000000000000000000000000000000010000000000000000000000000001010",
+                    "0000000000000000000000000000000010000000000000001000000010001011",
+                    "1000000000000000000000000000000000000000000000000000000010001011",
+                    "1000000000000000000000000000000000000000000000001000000010001001",
+                    "1000000000000000000000000000000000000000000000001000000000000011",
+                    "1000000000000000000000000000000000000000000000001000000000000010",
+                    "1000000000000000000000000000000000000000000000000000000010000000",
+                    "0000000000000000000000000000000000000000000000001000000000001010",
+                    "1000000000000000000000000000000010000000000000000000000000001010",
+                    "1000000000000000000000000000000010000000000000001000000010000001",
+                    "1000000000000000000000000000000000000000000000001000000010000000",
+                    "0000000000000000000000000000000010000000000000000000000000000001",
+                    "1000000000000000000000000000000010000000000000001000000000001000" ]    
+                    #Round constants for Iota stage
+
+    def extractslice(self, pos):
+        """
+        Function to calculate the indices of a given slice when loaded into the registers
+        This function can be omitted for hardware implementation since its returned values are pre-determined
+        The indices of a given slice are stored in self.x
+        The (x,y) element of a slice can be accessed from a register as - R[self.x[x][y], where R[64] is a 64 bit array which refers to the 64 bit register 
+        """
+        if not pos%2:
+            for i in range(5):
+                for j in range(5):
+                    if i==0 and j==0:
+                        self.x[i][j] = 0
+                    else:
+                        if (5*i+j)%2:
+                            self.x[i][j] = 2*(5*i+j)
+                        else:
+                            self.x[i][j] = 2*(5*i+j)-1
+        else:
+            for i in range(5):
+                for j in range(5):
+                    if i==0 and j==0:
+                        self.x[i][j] = 1
+                    else:
+                        if (5*i+j)%2:
+                            self.x[i][j] = 2*(5*i+j)+2
+                        else:
+                            self.x[i][j] = 2*(5*i+j)+1
+
+    def storeParity(self, R, nslice):
+        """
+        Calculates column parities of given slice and stores it in the parity register
+        """
+        if (self.curslice != nslice):
+            self.extractslice(nslice)
+            self.curslice = nslice
+        for x in range(5):
+            self.tempParityReg[x] = self.ParityReg[x]
+        for x in range(5):
+            self.ParityReg[x] = 0
+            for y in range(5):
+                self.ParityReg[x] = self.ParityReg[x] ^ R[self.x[x][y]]
+
+    def theta(self, R, nslice):
+        """
+        Slice wise Theta stage implementation
+        """
+        if (self.curslice != nslice):
+            self.extractslice(nslice)
+            self.curslice = nslice
+        for x in range(5):
+                self.tempParityReg[x] = self.tempParityReg[x]^(R[self.x[(x-2)%5][0]] ^ R[self.x[(x-2)%5][1]] ^ R[self.x[(x-2)%5][2]] ^ R[self.x[(x-2)%5][3]] ^ R[self.x[(x-2)%5][4]])
+        for x in range(5):
+            for y in range(5):
+                R[self.x[(x-1)%5][y]] = self.tempParityReg[x] ^ R[self.x[(x-1)%5][y]]
+
+    def pi(self, R, nslice):
+        """
+        Slice wise Pi stage implementation
+        """
+        if (self.curslice != nslice):
+            self.extractslice(nslice)
+            self.curslice = nslice
+        for x in range(5):
+            for y in range(5):
+                self.temp[x][y] = R[self.x[(x+3*y)%5][x]]
+        for x in range(5):
+            for y in range(5):
+                R[self.x[x][y]] = self.temp[x][y]
+
+    def chi(self, R, nslice):
+        """
+        Slice wise Chi stage implementation
+        """
+        if (self.curslice != nslice):
+            self.extractslice(nslice)
+            self.curslice = nslice
+        for x in range(5):
+            for y in range(5):
+                self.temp[x][y] = R[self.x[x][y]] ^ ((R[self.x[(x+1)%5][y]] ^ 1) & R[self.x[(x+2)%5][y]])
+        for x in range(5):
+            for y in range(5):
+                R[self.x[x][y]] = self.temp[x][y]
+
+    def iota(self, R, nslice, rnd):
+        """
+        Slice wise Iota stage implementation
+        """
+        if (self.curslice != nslice):
+            self.extractslice(nslice)
+            self.curslice = nslice
+        R[self.x[0][0]] = R[self.x[0][0]] ^ int(self.RC[rnd][64-nslice-1])
 
 class SHA3:
     """
@@ -208,6 +337,7 @@ class SHA3:
 
         P = memPopulate()
         R = Register()
+        S = SliceProcessor()
 
         P.sram = P.populate(str(input("Enter String - ")))
 
@@ -216,7 +346,9 @@ class SHA3:
         #         print("%d"%P.sram[i][j], end=' ')
         #     print("")
 
-        R.loadLane(0, P.sram)
+        R.loadSliceBlock(1, P.sram)
+
+        print('')
 
         for i in range(63, -1, -1):
             print("%2d"%R.R[i], end=' ')
