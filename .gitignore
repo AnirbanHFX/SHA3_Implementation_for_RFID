@@ -2,5 +2,5 @@
 Version_1/Testbench/*.mti
 Version_1/Testbench/*.mpf
 Version_1/Testbench/*.wlf
-Version_1/TestBench/work/
-Version_2/RTL_old/
+Version_1/TestBench/work/*
+Version_2/RTL_old/*
