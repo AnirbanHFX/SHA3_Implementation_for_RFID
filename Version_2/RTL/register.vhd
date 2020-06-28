@@ -12,7 +12,7 @@ port(
     d: in std_logic_vector(63 downto 0);        -- Register parallel input
     q: inout std_logic_vector(63 downto 0);     -- Register parallel output
     mode : in std_logic;                        -- Input mode select : '0' = serial in, '1' = parallel in
-    slc : in std_logic_vector(1 downto 0);      -- Select slice, for parallel input of a slice from Slice unit
+    slc : in std_logic;                         -- Select slice, for parallel input of a slice from Slice unit
     shift: in std_logic                         -- Shift amount logic : '0' = left shift 4 bits, '1' = left shift 2 bits
 );
 end entity register;
@@ -35,7 +35,7 @@ architecture register_arc of register is
                         q(1 downto 0) <= d(1 downto 0);
                     end if;
                 else                            -- Parallel input logic of a slice from slice demultiplexer
-                    if (to_integer(unsigned(slc)) rem 2) = 0 then
+                    if slc = '0' then
                         q(0 downto 0) <= d(0 downto 0);
                         q(3 downto 2) <= d(3 downto 2);
                         q(7 downto 6) <= d(7 downto 6);
