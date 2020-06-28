@@ -32,7 +32,7 @@ class memPopulate:
         for x in range(5):
             for y in range(5):
                 for z in range(64):
-                    self.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
+                    elf.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
                     #self.A[x][y][z] = z
                     #self.A[x][y][z] = 10*x+y
                     #self.A[x][y][z] = random.randint(0,1)
