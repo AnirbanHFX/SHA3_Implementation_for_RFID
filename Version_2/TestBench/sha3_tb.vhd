@@ -33,6 +33,17 @@ architecture arch_sha3_tb of sha3_tb is
     );
     end component;
 
+    component deinterleave port (
+        wirein      : in std_logic_vector(7 downto 0);      -- Interleaved input
+        wireout     : out std_logic_vector(3 downto 0);     -- Deinterleaved output to register
+        leaved      : in std_logic;                         -- Logic '1' indicates input is interleaved and vice versa
+        row         : in std_logic;                         -- Logic '1' indicates input is a row and '1' indicates input is a slice pair
+        ctrl        : in std_logic_vector(1 downto 0)       -- Interleaver control logic
+                                                            -- When selecting slice, ctrl == slice%4
+                                                            -- When selecting row, ctrl%2 == row%2
+    );
+    end component;
+
     component slicemux port (
         datain : in std_logic_vector(49 downto 0);      -- Input from register outputs
         dataout : out std_logic_vector(24 downto 0);    -- Slice output
@@ -57,6 +68,9 @@ architecture arch_sha3_tb of sha3_tb is
         bypass_theta : in std_logic                         -- Logic 1 bypasses theta
     );
     end component;
+
+    signal End_of_Conversion : std_logic := '0';
+    signal fasterclock : std_logic := '0';
 
     -- sram signals --
     signal we : std_logic := '1';                                       -- Write enable
@@ -107,6 +121,52 @@ architecture arch_sha3_tb of sha3_tb is
 
     begin
 
-        
+        EOC <= End_of_Conversion;                           -- Signal end of hash algorithm
+        sha3_dataout <= data;                               -- Output RAM words
+
+        ram : sram port map (ramclk, we, addr, datain, data);
+        r : register port map (regclk, regreset, d, q, mode, regslc, shift);
+        dlv : deinterleave port map (wirein=>data, wireout=>deleave_d, ctrl=>ctrl);
+
+        slcmux : slicemux port map (q, sliceout, regslc);
+        slcdemux : slicedemux port map (outslice, regslcin, regslc);
+
+        sproc : sliceproc port map (inslice, outslice, slc, rnd, parclk, byp_ixp, byp_theta);
+
+        inslice <= sliceout;
+
+        SHA3 : process (clk, counter) is
+            variable k : natural;
+        begin
+            --- Initialize SRAM ---
+            if to_integer(unsigned(counter)) = 0 then
+                ramclk <= clk;
+                regreset <= '1';
+                addr <= (others => '0');
+                datain <= sha3_datain;
+            elsif to_integer(unsigned(counter)) < 200 then
+                ramclk <= clk;
+                regreset <= '0';
+                we <= '1';
+                datain <= sha3_datain;
+                if falling_edge(clk) then
+                    addr <= addr + 1;
+                end if;
+
+            --- END OF OPERATIONS ---
+            else
+                we <= '0';
+                rhoclk <= '0';
+                byp_ixp <= '1';
+                byp_theta <= '1';
+                regclk <= '0';
+                parclk <= '0';
+                datain <= (others => 'Z');
+                byp_lane <= '1';
+                regreset <= '1';
+                addr <= data_addr;
+                End_of_Conversion <= '1';
+            end if;
+        end process SHA3;
 
     end architecture arch_sha3_tb;
