@@ -5,7 +5,7 @@ use IEEE.STD_LOGIC_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity register is 
+entity register64 is 
 port(
     clk: in std_logic;                          -- Register clock
     reset: in std_logic;                        -- Register reset logic
@@ -15,9 +15,9 @@ port(
     slc : in std_logic;                         -- Select slice, for parallel input of a slice from Slice unit
     shift: in std_logic                         -- Shift amount logic : '0' = left shift 4 bits, '1' = left shift 2 bits
 );
-end entity register;
+end entity register64;
 
-architecture register_arc of register is
+architecture register_arc of register64 is
 
     begin
 

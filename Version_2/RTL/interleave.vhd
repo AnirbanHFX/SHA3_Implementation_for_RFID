@@ -54,7 +54,7 @@ begin
 
         else                        -- Write row
 
-            if ctrl = "01" or ctrl = "11"       -- Row%2 == 1
+            if ctrl = "01" or ctrl = "11" then     -- Row%2 == 1
                 wireout(0 downto 0) <= wirein(0 downto 0);
                 wireout(2 downto 2) <= wirein(1 downto 1);
                 wireout(4 downto 4) <= wirein(2 downto 2);
