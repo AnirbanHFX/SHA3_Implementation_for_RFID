@@ -10,7 +10,7 @@ end entity sha3_tb;
 
 architecture arch_sha3_tb of sha3_tb is
 
-    component sha3_trial
+    component sha3
     port (
         clk : in std_logic;                                 -- Global clock
         sha3_datain : in std_logic_vector(7 downto 0);      -- Input to internal SRAM (must be supplied initial RAM words during counter = 0 to 199)
@@ -34,7 +34,7 @@ architecture arch_sha3_tb of sha3_tb is
 
     begin
 
-        sha3 : sha3_trial port map(clock, datain, cntr, addr, dataout, endconversion);
+        hash : sha3 port map(clock, datain, cntr, addr, dataout, endconversion);
 
         fileProc : process (clock) is
 
