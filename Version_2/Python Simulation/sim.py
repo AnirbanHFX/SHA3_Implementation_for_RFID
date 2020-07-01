@@ -32,7 +32,7 @@ class memPopulate:
         for x in range(5):
             for y in range(5):
                 for z in range(64):
-                    elf.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
+                    self.A[x][y][z] = res[64*(5*y+x)+z]     #Initialize state
                     #self.A[x][y][z] = z
                     #self.A[x][y][z] = 10*x+y
                     #self.A[x][y][z] = random.randint(0,1)
@@ -618,25 +618,24 @@ class SHA3:
         S = SliceProcessor()
         L = LaneProcessor()
 
-        P.sram = P.populate(str(input("Enter String - ")))
+        self.readExternalRam(P.sram)
 
         # for i in range(200):
         #     for j in range(8):
         #         print("%d"%P.sram[i][j], end=' ')
         #     print("")
 
-        R.loadSliceBlock(1, P.sram)
-        L.rho(R.R, 1, P.sram)
+        R.loadSliceBlock(31, P.sram)
 
         for i in range(63, -1, -1):
-            print("%2d"%R.R[i], end=' ')
+            print("%2d"%R.R[i], end='')
         print('')
 
 def main():
 
     sha = SHA3()
-    #sha.test()
-    sha.Keccak()
+    sha.test()
+    #sha.Keccak()
 
 if __name__ == '__main__':
     main()

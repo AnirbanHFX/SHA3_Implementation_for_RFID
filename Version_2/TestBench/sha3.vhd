@@ -122,7 +122,11 @@ architecture arch_sha3 of sha3 is
     signal isleaved, isrow : std_logic := '0';
     --------------------------
 
+    signal iword, nword, sliceblock, lanepair, offset : natural;        -- Variables used for various computations
+
     begin
+
+        fasterclock <= not fasterclock after 10 ns;
 
         EOC <= End_of_Conversion;                           -- Signal end of hash algorithm
         sha3_dataout <= data;                               -- Output RAM words
@@ -155,7 +159,55 @@ architecture arch_sha3 of sha3 is
                 if falling_edge(clk) then
                     addr <= addr + 1;
                 end if;
-
+            --- Load Slice Block 15 ---
+            elsif to_integer(unsigned(counter)) = 200 then 
+                datain <= (others => 'Z');
+                isleaved <= '1';
+                d(3 downto 0) <= deleave_d;
+                byp_lane <= '1';
+                byp_theta <= '1';
+                byp_ixp <= '1';
+                mode <= '0';
+                we <= '0';
+                shift <= '0';
+                ctrl <= "01";
+                sliceblock <= 31;
+                iword <= 199-(15-sliceblock/2);
+                addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                regslc <= '1';
+            elsif to_integer(unsigned(counter)) >= 201 and to_integer(unsigned(counter)) < 213 then
+                d(3 downto 0) <= deleave_d;   
+                if clk'event then
+                    regclk <= clk;
+                end if;
+                addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                if rising_edge(clk) then
+                    if iword - 16 >= 8 then
+                        iword <= iword - 16;
+                    end if;
+                end if;
+            elsif to_integer(unsigned(counter)) = 213 then
+                d(3 downto 0) <= deleave_d;
+                nword <= (sliceblock rem 4)*2;
+                isleaved <= '0';
+                if nword = 0 then
+                    ctrl <= "00";
+                elsif nword = 2 then
+                    ctrl <= "01";
+                elsif nword = 4 then
+                    ctrl <= "10";
+                else
+                    ctrl <= "11";
+                end if;
+                shift <= '1';
+                addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
+                if clk'event then
+                    regclk <= clk;
+                end if;
+            elsif to_integer(unsigned(counter)) = 214 then
+                if falling_edge(clk) then
+                    regclk <= '0';
+                end if;
             --- END OF OPERATIONS ---
             else
                 we <= '0';
