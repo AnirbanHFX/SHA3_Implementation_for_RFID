@@ -52,7 +52,7 @@ architecture arch_rho of rho is
     signal rhounit : std_logic_vector(3 downto 0);                  -- Output of rho register
     signal leavedoutput : std_logic_vector(7 downto 0);             -- Output of interleaver
     signal direction: std_logic;                                    -- Barrel shifter shift direction
-    signal shift1 : std_logic_vector(1 downto 0);                   -- Barrel shifter shift amount (obtained from lower 2 bits of overall rotation amounts of respective rows)
+    signal shift : std_logic_vector(1 downto 0);                   -- Barrel shifter shift amount (obtained from lower 2 bits of overall rotation amounts of respective rows)
     signal barrel_in, barrel_out : std_logic_vector(3 downto 0);    -- Barrel shifter input and output
     signal leaf : std_logic_vector(3 downto 0);                     -- Inputs to interleaver
     signal interleaver_ctrl : std_logic_vector(1 downto 0);         -- Interleaver control logic
