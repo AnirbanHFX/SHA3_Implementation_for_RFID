@@ -12,7 +12,6 @@ entity rho is port (
     clk : in std_logic;                             -- Clock to Rho registers
     resetreg : in std_logic;                        -- Reset logic for Rho registers
     leaved : in std_logic;                          -- Logic '1' indicates output is to be interleaved and vice versa
-    --row : in std_logic;                             -- Logic '1' indicates output is a row and '1' indicates output is a slice pair
     leavectrl : in std_logic_vector(1 downto 0)     -- Control logic to interleaver
 );
 end entity rho;
