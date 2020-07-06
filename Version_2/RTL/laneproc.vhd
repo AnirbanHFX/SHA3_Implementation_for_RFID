@@ -72,7 +72,7 @@ architecture arch_laneproc of laneproc is
 
         rhoblock : rho port map(regbits, rot, rotdir, outpword, bypass, rhoclk, resetrho, interleaver_leaved, interleaver_ctrl);
 
-        laneProcess : process(bypass, clk, cntr, state, lane, rhoclk) is
+        laneProcess : process(bypass, clk, cntr, state, lane, rhoclk, leaved) is
         begin
             if bypass = '1' then            -- Route slice blocks to RAM when Rho is bypassed
                 start_of_conversion <= '0';     -- Signal end of conversion

@@ -620,22 +620,36 @@ class SHA3:
 
         self.readExternalRam(P.sram)
 
-        # for i in range(200):
-        #     for j in range(8):
-        #         print("%d"%P.sram[i][j], end=' ')
-        #     print("")
+        #self.fullTheta(P, R, S, L)
 
         R.loadSliceBlock(31, P.sram)
+        S.storeParity(R.R, 63)
+        for i in range(64):
+            if (i%2 == 0):
+                R.loadSliceBlock(int(i/2), P.sram)
+            S.storeParity(R.R, i)
+            S.theta(R.R, i)
+            if (i%2 == 1):
+                R.saveSliceBlock(int(i/2), P.sram)
 
-        for i in range(63, -1, -1):
-            print("%2d"%R.R[i], end='')
-        print('')
+        for i in range(200):
+            print("%d : "%i, end ='')
+            for j in range(2):
+                aggregate = 0
+                for k in range(4):
+                    aggregate += int((1<<(3-k))*P.sram[i][7-4*j-k])
+                print("%X"%aggregate, end='')
+            print('')
+
+        # for i in range(63, -1, -1):
+        #     print("%2d"%R.R[i], end='')
+        # print('')
 
 def main():
 
     sha = SHA3()
-    sha.test()
-    #sha.Keccak()
+    #sha.test()
+    sha.Keccak()
 
 if __name__ == '__main__':
     main()

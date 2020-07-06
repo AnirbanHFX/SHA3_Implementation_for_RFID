@@ -71,6 +71,20 @@ architecture arch_sha3 of sha3 is
     );
     end component;
 
+    component laneproc port (
+        bypass_lane : in std_logic;                     -- '1' when rho is bypassed and laneproc is used to write slices to RAM, '0' when computing rho
+        clk : in std_logic;                             -- Clock input
+        cntr : in std_logic_vector(3 downto 0);         -- When computing rho : cntr addresses 16 register sections, when writing slices : cntr addresses 13 register sections
+        lane : in std_logic_vector(4 downto 0);         -- Index identifying the lane loaded in the register
+        reg : in std_logic_vector(63 downto 0);         -- Output of register
+        ramaddr : out std_logic_vector(8 downto 0);     -- Returns sram address where rho unit contents need to be stored
+        ramword : out std_logic_vector(7 downto 0);     -- Interleaver output - connected to input of RAM
+        ramtrig : out std_logic;                        -- Write Enable logic of RAM
+        ctrl : in std_logic_vector(1 downto 0);         -- Interleaver ctrl logic
+        leaved : in std_logic                           -- Choose whether interleaver writes to leaved or non-interleaved word
+    );
+    end component;
+
     signal End_of_Conversion : std_logic := '0';
     signal fasterclock : std_logic := '0';
 
@@ -110,7 +124,7 @@ architecture arch_sha3 of sha3 is
     signal byp_lane : std_logic := '1';                                 -- Bypass logic
     signal rhoclk : std_logic := '0';                                   -- Clock to rho registers
     signal rhocntr : std_logic_vector(3 downto 0) := (others => '0');   -- Counter for addressing register sections (0-15)
-    signal lanepr : std_logic_vector(4 downto 0) := (others => '0');    -- Lanepair index (1-12)
+    signal lane : std_logic_vector(4 downto 0) := (others => '0');      -- Lane index (1-25)
     signal ramaddress : std_logic_vector(8 downto 0);                   -- Ram address output (Lane processor computes address where a word must be saved after Rho operation)
     signal ramdata : std_logic_vector(7 downto 0);                      -- Word to be written to RAM
     signal divider : std_logic_vector(1 downto 0);                      -- Frequency divider (Counter is incremented after 3 clock cycles)
@@ -122,7 +136,7 @@ architecture arch_sha3 of sha3 is
     signal isleaved, isrow : std_logic := '0';
     --------------------------
 
-    signal iword, nword, sliceblock, lanepair, offset : natural;        -- Variables used for various computations
+    signal iword, nword, sliceblock, laneid, offset : natural;        -- Variables used for various computations
 
     begin
 
@@ -139,6 +153,7 @@ architecture arch_sha3 of sha3 is
         slcdemux : slicedemux port map (outslice, regslcin, regslc);
 
         sproc : sliceproc port map (inslice, outslice, slc, rnd, parclk, byp_ixp, byp_theta);
+        lproc : laneproc port map (byp_lane, rhoclk, rhocntr, lane, q, ramaddress, ramdata, ramtrigger, ctrl, isleaved);
 
         inslice <= sliceout;
 
@@ -217,9 +232,9 @@ architecture arch_sha3 of sha3 is
                 end if;
             
             --- PERFORM THETA ON ENTIRE STATE ---
-            elsif to_integer(unsigned(counter)) >= 215 and to_integer(unsigned(counter)) <=  then
+            elsif to_integer(unsigned(counter)) >= 215 and to_integer(unsigned(counter)) <= 246+32*31 then
                 k := 0;
-                loopsize := ;
+                loopsize := 32;
                 ramclk <= clk;
                 while(k <= 31) loop
                     if to_integer(unsigned(counter)) = 215+loopsize*k then
@@ -243,7 +258,6 @@ architecture arch_sha3 of sha3 is
                         parclk <= '0';
                         iword <= 199-(15-sliceblock/2);
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
-                        regslc <= std_logic(to_unsigned(k rem 2, regslc'length));
                     elsif to_integer(unsigned(counter)) >= 215+2+loopsize*k and to_integer(unsigned(counter)) < 215+14+loopsize*k then     -- LOAD SLICE BLOCK
                         d(3 downto 0) <= deleave_d;
                         if clk'event then
@@ -259,6 +273,7 @@ architecture arch_sha3 of sha3 is
                         d(3 downto 0) <= deleave_d;
                         nword <= (sliceblock rem 4)*2;
                         isleaved <= '0';
+                        byp_theta <= '0';
                         if nword = 0 then
                             ctrl <= "00";
                         elsif nword = 2 then
@@ -278,54 +293,63 @@ architecture arch_sha3 of sha3 is
                         if falling_edge(clk) then
                             regclk <= '0';
                         end if;
-                        regslc <= std_logic(to_unsigned(k rem 2, regslc'length));
+                        regslc <= '0';
                         d(49 downto 0) <= regslcin(49 downto 0);
                         mode <= '1';
                         shift <= '0';
-                    elsif to_integer(unsigned(counter)) <= 234+loopsize*k and to_integer(unsigned(counter)) > 230+loopsize*k then
+                    elsif to_integer(unsigned(counter)) <= 232+loopsize*k and to_integer(unsigned(counter)) > 230+loopsize*k then
                         if not rising_edge(clk) then
                             regclk <= clk;      -- Theta current slice and store in register
                             parclk <= clk;
                         end if;
-                        if falling_edge(clk) and to_integer(unsigned(regslc)) < 3 then
-                            regslc <= regslc + 1;
+                        if falling_edge(clk) and regslc = '0' then
+                            regslc <= '1';
                         end if;
                         d(49 downto 0) <= regslcin(49 downto 0);
 
-                    -- -- SAVE REGISTER CONTENTS TO SRAM
-                    -- elsif to_integer(unsigned(counter)) = 235+loopsize*k then 
-                    --     ctrl <= "00";
-                    --     sliceblock <= k;
-                    --     datain <= ramdata;
-                    --     iword <= 199-(15-sliceblock/2);
-                    --     addr <= std_logic_vector(to_unsigned(iword, addr'length));
-                    --     -- rhocntr <= "1100";
-                    -- elsif to_integer(unsigned(counter)) >= 236+loopsize*k and to_integer(unsigned(counter)) < 248+loopsize*k then
-                    --     we <= '1';
-                    --     datain <= ramdata;
-                    --     addr <= std_logic_vector(to_unsigned(iword, addr'length));
-                    --     if rising_edge(clk) then
-                    --         if to_integer(unsigned(rhocntr)) > 0 then
-                    --             rhocntr <= rhocntr - 1;
-                    --         end if;
-                    --         if iword - 16 >= 8 then
-                    --             iword <= iword - 16;
-                    --         end if;
-                    --     end if;
-                    -- elsif to_integer(unsigned(counter)) = 248+loopsize*k then
-                    --     rhocntr <= (others => '0');
-                    --     we <= '1';
-                    --     nword <= (sliceblock rem 2)*4;
-                    --     datain <= ramdata;
-                    --     if nword = 4 then
-                    --         ctrl <= "10";
-                    --     elsif nword = 0 then
-                    --         ctrl <= "01";
-                    --     else
-                    --         ctrl <= "11";
-                    --     end if;
-                    --     shift <= '1';
-                    --     addr <= std_logic_vector(to_unsigned(sliceblock/2, addr'length));
+                    -- SAVE REGISTER CONTENTS TO SRAM
+                    elsif to_integer(unsigned(counter)) = 233+loopsize*k then 
+                        ctrl <= std_logic_vector(to_unsigned(k rem 4, ctrl'length));
+                        sliceblock <= k;
+                        datain <= ramdata;
+                        iword <= 199-(15-sliceblock/2);
+                        isleaved <= '1';
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        rhocntr <= "1100";
+                    elsif to_integer(unsigned(counter)) >= 234+loopsize*k and to_integer(unsigned(counter)) < 246+loopsize*k then
+                        we <= '1';
+                        datain <= ramdata;
+                        addr <= std_logic_vector(to_unsigned(iword, addr'length));
+                        if rising_edge(clk) then
+                            if to_integer(unsigned(rhocntr)) > 0 then
+                                rhocntr <= rhocntr - 1;
+                            end if;
+                            if iword - 16 >= 8 then
+                                iword <= iword - 16;
+                            end if;
+                        end if;
+                        -- if to_integer(unsigned(counter)) = 245+loopsize*k then
+                        --     if falling_edge(clk) then
+                        --         isleaved <= '0';
+                        --     end if;
+                        -- end if ;
+                    elsif to_integer(unsigned(counter)) = 246+loopsize*k then
+                        rhocntr <= (others => '0');
+                        we <= '1';
+                        nword <= (sliceblock rem 4)*2;
+                        isleaved <= '0';
+                        datain <= ramdata;
+                        if nword = 0 then
+                            ctrl <= "00";
+                        elsif nword = 2 then
+                            ctrl <= "01";
+                        elsif nword = 4 then
+                            ctrl <= "10";
+                        else
+                            ctrl <= "11";
+                        end if;
+                        shift <= '1';
+                        addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
                     end if;
                     k := k+1;
                 end loop;
