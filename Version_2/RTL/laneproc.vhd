@@ -85,6 +85,7 @@ architecture arch_laneproc of laneproc is
                 resetrho <= '1';
                 state <= (others => 'Z');
             else                            -- Route lanes through Rho unit and write them back to RAM
+                interleaver_leaved <= '1';
                 if cntr'event and cntr <= "0000" then       -- Reset state when counter resets
                     state <= (others => '0');
                 elsif clk'event then                        -- Advance state modulo 6 with each clock event
@@ -101,7 +102,7 @@ architecture arch_laneproc of laneproc is
             end if;
             if state'event then                 -- Finite State Machine operations
                 if state = "00" then               -- State 0: Update mux addresses, shift constants, initialize rho clock, shift direction to '0', ram control inputs, reset rho register, write to ram if start_of_conversion is 1
-                    muxaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(to_integer(unsigned(lane)))(5 downto 2)))) rem 16, muxaddr'length));
+                    muxaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(to_integer(unsigned(lane)))(5 downto 2))))+to_integer(unsigned(cntr)) rem 16, muxaddr'length));
                     rot <= rotc(to_integer(unsigned(lane)))(1 downto 0);
                     rhoclk <= '0';
                     rotdir <= '0';
@@ -128,7 +129,7 @@ architecture arch_laneproc of laneproc is
                     if rot /= "00" then
                         rhoclk <= '1';
                     end if;
-                    ramaddr <= std_logic_vector(to_unsigned(8+((to_integer(unsigned(lane)))/2-1)*16 + ((to_integer(unsigned(cntr))) rem 16), ramaddr'length));
+                    ramaddr <= std_logic_vector(to_unsigned(8+((to_integer(unsigned(lane))+2)/2-1)*16 + ((to_integer(unsigned(cntr))) rem 16), ramaddr'length));
                     if (8+((to_integer(unsigned(lane)))/2-1)*16 + ((to_integer(unsigned(cntr))) rem 16)) < 8 then
                         interleaver_leaved <= '0';
                     else

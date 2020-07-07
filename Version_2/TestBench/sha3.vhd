@@ -124,7 +124,7 @@ architecture arch_sha3 of sha3 is
     signal byp_lane : std_logic := '1';                                 -- Bypass logic
     signal rhoclk : std_logic := '0';                                   -- Clock to rho registers
     signal rhocntr : std_logic_vector(3 downto 0) := (others => '0');   -- Counter for addressing register sections (0-15)
-    signal lane : std_logic_vector(4 downto 0) := (others => '0');      -- Lane index (1-25)
+    signal lane : std_logic_vector(4 downto 0) := (others => '0');      -- Lane index (1-24)
     signal ramaddress : std_logic_vector(8 downto 0);                   -- Ram address output (Lane processor computes address where a word must be saved after Rho operation)
     signal ramdata : std_logic_vector(7 downto 0);                      -- Word to be written to RAM
     signal divider : std_logic_vector(1 downto 0);                      -- Frequency divider (Counter is incremented after 3 clock cycles)
@@ -157,7 +157,7 @@ architecture arch_sha3 of sha3 is
 
         inslice <= sliceout;
 
-        SHA3 : process (clk, counter) is
+        SHA3 : process (clk, counter, divider, ramtrigger) is
             variable k : natural;
             variable loopsize : natural;
             variable innerloop : natural;
@@ -353,12 +353,67 @@ architecture arch_sha3 of sha3 is
                     end if;
                     k := k+1;
                 end loop;
+            -- PERFORM RHO ON ENTIRE STATE --
+            -- 759 -> 1239 (+480)
+            elsif to_integer(unsigned(counter)) >= 1239 and to_integer(unsigned(counter)) <= 1238+51*24 then
+                k := 1;
+                loopsize := 51;
+                while (k <= 24) loop
+                    if to_integer(unsigned(counter)) = 1239+loopsize*(k-1) then     -- LOAD LANE k
+                        divider <= (others => '0');
+                        rhocntr <= (others => '0');
+                        ramclk <= '0';
+                        rhoclk <= '0';
+                        byp_lane <= '1';
+                        isrow <= '1';
+                        isleaved <= '1';
+                        mode <= '0';
+                        shift <= '0';
+                        d(3 downto 0) <= deleave_d;
+                        byp_theta <= '1';
+                        regreset <= '1';
+                        we <= '0';
+                        if (k rem 2) = 0 then
+                            ctrl <= "00";
+                        else
+                            ctrl <= "01";
+                        end if;
+                        offset <= 8+((k+1)/2 - 1)*16 + 15; -- 8 + (lanepair - 1)*16 + 15;
+                        addr <= std_logic_vector(to_unsigned(offset, addr'length));
+                    elsif to_integer(unsigned(counter)) >= 1239+1+loopsize*(k-1) and to_integer(unsigned(counter)) < 1239+17+loopsize*(k-1) then
+                        regreset <= '0';
+                        d(3 downto 0) <= deleave_d;
+                        if not rising_edge(clk) then
+                            regclk <= clk;
+                        end if;
+                        if rising_edge(clk) and to_integer(unsigned(addr)) > 8+((k+1)/2 - 1)*16 then
+                            addr <= addr - 1;
+                        end if;
+                    elsif to_integer(unsigned(counter)) >= 1239+17+loopsize*(k-1) and to_integer(unsigned(counter)) <= 1289+loopsize*(k-1) then
+                        rhoclk <= clk;
+                        byp_lane <= '0';
+                        we <= '1';
+                        datain <= ramdata;
+                        ramclk <= ramtrigger;
+                        addr <= ramaddress;
+                        lane <= std_logic_vector(to_unsigned(k-1, lane'length));
+                        if rising_edge(clk) then
+                            divider <= std_logic_vector(to_unsigned((to_integer(unsigned(divider)) + 1) rem 2, divider'length));
+                        end if;
+                        if falling_edge(divider(0)) then
+                            rhocntr <= std_logic_vector(to_unsigned((to_integer(unsigned(rhocntr)) + 1) rem 16, rhocntr'length));
+                        end if;
+                    end if;
+                    k := k+1;
+                end loop;
             --- END OF OPERATIONS ---
             else
                 we <= '0';
                 rhoclk <= '0';
                 byp_ixp <= '1';
                 byp_theta <= '1';
+                isleaved <= '0';
+                isrow <= '0';
                 regclk <= '0';
                 parclk <= '0';
                 datain <= (others => 'Z');
