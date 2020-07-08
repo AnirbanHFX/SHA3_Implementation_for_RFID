@@ -106,7 +106,7 @@ architecture arch_laneproc of laneproc is
                     rot <= rotc(to_integer(unsigned(lane)))(1 downto 0);
                     rhoclk <= '0';
                     rotdir <= '0';
-                    if start_of_conversion = '1' then
+                    if start_of_conversion = '1' then       ------ Previously in state 00
                         ramtrig <= '1';
                     end if;
                     resetrho <= '1';

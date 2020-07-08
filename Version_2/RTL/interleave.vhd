@@ -56,13 +56,21 @@ begin
 
             if ctrl = "01" or ctrl = "11" then     -- Row%2 == 1
                 wireout(0 downto 0) <= wirein(0 downto 0);
+                wireout(1 downto 1) <= (others => 'Z');
                 wireout(2 downto 2) <= wirein(1 downto 1);
+                wireout(3 downto 3) <= (others => 'Z');
                 wireout(4 downto 4) <= wirein(2 downto 2);
+                wireout(5 downto 5) <= (others => 'Z');
                 wireout(6 downto 6) <= wirein(3 downto 3);
+                wireout(7 downto 7) <= (others => 'Z');
             else
+                wireout(0 downto 0) <= (others => 'Z');
                 wireout(1 downto 1) <= wirein(0 downto 0);
+                wireout(2 downto 2) <= (others => 'Z');
                 wireout(3 downto 3) <= wirein(1 downto 1);
+                wireout(4 downto 4) <= (others => 'Z');
                 wireout(5 downto 5) <= wirein(2 downto 2);
+                wireout(6 downto 6) <= (others => 'Z');
                 wireout(7 downto 7) <= wirein(3 downto 3);
             end if;
 

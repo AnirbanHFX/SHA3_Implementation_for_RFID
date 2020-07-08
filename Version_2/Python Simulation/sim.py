@@ -621,6 +621,10 @@ class SHA3:
         self.readExternalRam(P.sram)
 
         self.fullTheta(P, R, S, L)
+
+        #R.loadLane(1, P.sram)
+        #L.rho(R.R, 1, P.sram)
+
         self.fullrho(P, R, S, L)
 
         # R.loadSliceBlock(31, P.sram)

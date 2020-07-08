@@ -157,7 +157,7 @@ architecture arch_sha3 of sha3 is
 
         inslice <= sliceout;
 
-        SHA3 : process (clk, counter, divider, ramtrigger) is
+        SHA3 : process (clk, fasterclock, divider, ramtrigger) is
             variable k : natural;
             variable loopsize : natural;
             variable innerloop : natural;
