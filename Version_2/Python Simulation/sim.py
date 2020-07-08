@@ -621,21 +621,11 @@ class SHA3:
         self.readExternalRam(P.sram)
 
         self.fullTheta(P, R, S, L)
-
-        #R.loadLane(1, P.sram)
-        #L.rho(R.R, 1, P.sram)
-
         self.fullrho(P, R, S, L)
-
-        # R.loadSliceBlock(31, P.sram)
-        # S.storeParity(R.R, 63)
-        # for i in range(64):
-        #     if (i%2 == 0):
-        #         R.loadSliceBlock(int(i/2), P.sram)
-        #     S.storeParity(R.R, i)
-        #     S.theta(R.R, i)
-        #     if (i%2 == 1):
-        #         R.saveSliceBlock(int(i/2), P.sram)
+        for i in range(23):
+            self.miniround(P, R, S, L, i)
+            self.fullTheta(P, R, S, L)
+            self.fullrho(P, R, S, L)
 
         for i in range(200):
             print("%d : "%i, end ='')
