@@ -622,10 +622,30 @@ class SHA3:
 
         self.fullTheta(P, R, S, L)
         self.fullrho(P, R, S, L)
-        for i in range(23):
-            self.miniround(P, R, S, L, i)
-            self.fullTheta(P, R, S, L)
-            self.fullrho(P, R, S, L)
+
+        R.loadSliceBlock(31, P.sram)
+        S.storeParity(R.R, 63)
+        for i in range(64):
+            R.R[i] = 0
+        for i in range(2):
+            if (i%2 == 0):
+                R.loadSliceBlock(int(i/2), P.sram)
+            S.storeParity(R.R, i)
+            S.pi(R.R, i)
+            S.chi(R.R, i)
+            S.iota(R.R, i, 0)
+            S.theta(R.R, i)
+            if (i%2 == 1):
+                R.saveSliceBlock(int(i/2), P.sram)
+                
+        for i in range(63, -1, -1):
+            print("%2d"%R.R[i], end='')
+        print('')
+        
+        # for i in range(1):
+        #     self.miniround(P, R, S, L, i)
+        #     self.fullTheta(P, R, S, L)
+        #     self.fullrho(P, R, S, L)
 
         for i in range(200):
             print("%d : "%i, end ='')
@@ -636,9 +656,9 @@ class SHA3:
                 print("%X"%aggregate, end='')
             print('')
 
-        # for i in range(63, -1, -1):
-        #     print("%2d"%R.R[i], end='')
-        # print('')
+        for i in range(63, -1, -1):
+            print("%2d"%R.R[i], end='')
+        print('')
 
 def main():
 

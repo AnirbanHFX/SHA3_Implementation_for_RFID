@@ -92,7 +92,7 @@ architecture arch_laneproc of laneproc is
                     state <= std_logic_vector(to_unsigned(((to_integer(unsigned(state))+1) rem 4), state'length));
                 end if;
                 if lane'event then                      -- Update mux addresses when a new lane is loaded
-                    muxaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(to_integer(unsigned(lane)))(5 downto 2)))) rem 16, muxaddr'length));
+                    muxaddr <= std_logic_vector( to_unsigned( (to_integer(unsigned(  rotc(to_integer(unsigned(lane)))(5 downto 2)  )) ) rem 16, muxaddr'length )  );
                     rot <= rotc(to_integer(unsigned(lane)))(1 downto 0);
                 end if;
             end if;
@@ -102,7 +102,7 @@ architecture arch_laneproc of laneproc is
             end if;
             if state'event then                 -- Finite State Machine operations
                 if state = "00" then               -- State 0: Update mux addresses, shift constants, initialize rho clock, shift direction to '0', ram control inputs, reset rho register, write to ram if start_of_conversion is 1
-                    muxaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(to_integer(unsigned(lane)))(5 downto 2))))+to_integer(unsigned(cntr)) rem 16, muxaddr'length));
+                    muxaddr <= std_logic_vector( to_unsigned( (to_integer(unsigned(  rotc(to_integer(unsigned(lane)))(5 downto 2)  )) + to_integer(unsigned(cntr))) rem 16, muxaddr'length )  );
                     rot <= rotc(to_integer(unsigned(lane)))(1 downto 0);
                     rhoclk <= '0';
                     rotdir <= '0';

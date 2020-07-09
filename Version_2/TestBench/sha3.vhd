@@ -422,6 +422,9 @@ architecture arch_sha3 of sha3 is
                     --- Load Slice Block 15 ---
                     -- 200 -> 2463 (+2263)
                     if to_integer(unsigned(counter)) = 2463 + loopsize*modifiedrnd then 
+                        if rising_edge(clk) and to_integer(unsigned(counter)) /= 2463 then
+                            rnd <= rnd + 1;
+                        end if;
                         datain <= (others => 'Z');
                         isleaved <= '1';
                         d(3 downto 0) <= deleave_d;
@@ -436,6 +439,7 @@ architecture arch_sha3 of sha3 is
                         iword <= 199-(15-sliceblock/2);
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
                         regslc <= '1';
+                        slc <= std_logic_vector(to_unsigned(63, slc'length));
                     elsif to_integer(unsigned(counter)) >= 2464+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 2476+loopsize*modifiedrnd then
                         d(3 downto 0) <= deleave_d;   
                         if clk'event then
@@ -474,7 +478,7 @@ architecture arch_sha3 of sha3 is
                             parclk <= clk;
                         end if;
                     
-                    --- PERFORM THETA ON ENTIRE STATE ---
+                    --- PERFORM IOTA, CHI, PI, THETA ON ENTIRE STATE ---
                     elsif to_integer(unsigned(counter)) >= 2478+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 2509+32*31+loopsize*modifiedrnd then
                         k := 0;
                         innerloop := 32;
@@ -516,8 +520,6 @@ architecture arch_sha3 of sha3 is
                                 d(3 downto 0) <= deleave_d;
                                 nword <= (sliceblock rem 4)*2;
                                 isleaved <= '0';
-                                byp_theta <= '0';
-                                byp_ixp <= '0';
                                 if nword = 0 then
                                     ctrl <= "00";
                                 elsif nword = 2 then
@@ -537,6 +539,9 @@ architecture arch_sha3 of sha3 is
                                 if falling_edge(clk) then
                                     regclk <= '0';
                                 end if;
+                                byp_theta <= '0';
+                                byp_ixp <= '0';
+                                slc <= std_logic_vector(to_unsigned(sliceblock*2, slc'length));
                                 regslc <= '0';
                                 d(49 downto 0) <= regslcin(49 downto 0);
                                 mode <= '1';
@@ -548,6 +553,7 @@ architecture arch_sha3 of sha3 is
                                 end if;
                                 if falling_edge(clk) and regslc = '0' then
                                     regslc <= '1';
+                                    slc <= slc + 1;
                                 end if;
                                 d(49 downto 0) <= regslcin(49 downto 0);
 
@@ -572,11 +578,6 @@ architecture arch_sha3 of sha3 is
                                         iword <= iword - 16;
                                     end if;
                                 end if;
-                                -- if to_integer(unsigned(counter)) = 245+loopsize*k then
-                                --     if falling_edge(clk) then
-                                --         isleaved <= '0';
-                                --     end if;
-                                -- end if ;
                             elsif to_integer(unsigned(counter)) = 2509+innerloop*k+loopsize*modifiedrnd then
                                 rhocntr <= (others => '0');
                                 we <= '1';
@@ -600,7 +601,7 @@ architecture arch_sha3 of sha3 is
                     -- PERFORM RHO ON ENTIRE STATE --
                     -- 759 -> 1239 (+480)
                     -- 1239 -> 3502 (+2263)
-                    elsif to_integer(unsigned(counter)) >= 3502 and to_integer(unsigned(counter)) <= 3501+51*24 then
+                    elsif to_integer(unsigned(counter)) >= 3502+loopsize*modifiedrnd and to_integer(unsigned(counter)) <= 3501+51*24+loopsize*modifiedrnd then
                         k := 1;
                         innerloop := 51;
                         while (k <= 24) loop
