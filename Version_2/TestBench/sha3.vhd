@@ -425,12 +425,13 @@ architecture arch_sha3 of sha3 is
                         if rising_edge(clk) and to_integer(unsigned(counter)) /= 2463 then
                             rnd <= rnd + 1;
                         end if;
+                        isrow <= '0';
                         datain <= (others => 'Z');
                         isleaved <= '1';
                         d(3 downto 0) <= deleave_d;
                         byp_lane <= '1';
                         byp_theta <= '1';
-                        byp_ixp <= '1';
+                        byp_ixp <= '0';
                         mode <= '0';
                         we <= '0';
                         shift <= '0';
@@ -487,6 +488,9 @@ architecture arch_sha3 of sha3 is
                             if to_integer(unsigned(counter)) = 2478+innerloop*k+loopsize*modifiedrnd then
                                 datain <= (others => 'Z');
                                 we <= '0';
+                                byp_lane <= '1';
+                                byp_ixp <= '1';
+                                byp_theta <= '1';
                                 parclk <= '0';
                                 regclk <= '0';
                                 if not rising_edge(clk) then
@@ -561,6 +565,9 @@ architecture arch_sha3 of sha3 is
                             elsif to_integer(unsigned(counter)) = 2496+innerloop*k+loopsize*modifiedrnd then 
                                 ctrl <= std_logic_vector(to_unsigned(k rem 4, ctrl'length));
                                 sliceblock <= k;
+                                byp_ixp <= '1';
+                                byp_lane <= '1';
+                                byp_theta <= '1';
                                 datain <= ramdata;
                                 iword <= 199-(15-sliceblock/2);
                                 isleaved <= '1';
