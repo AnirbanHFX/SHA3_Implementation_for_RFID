@@ -622,38 +622,11 @@ class SHA3:
 
         self.fullTheta(P, R, S, L)
         self.fullrho(P, R, S, L)
-
-        # R.loadSliceBlock(31, P.sram)
-        # S.storeParity(R.R, 63)
-        # for i in range(64):
-        #     R.R[i] = 0
-        # for i in range(200):
-        #     print("%d : "%i, end ='')
-        #     for j in range(2):
-        #         aggregate = 0
-        #         for k in range(4):
-        #             aggregate += int((1<<(3-k))*P.sram[i][7-4*j-k])
-        #         print("%X"%aggregate, end='')
-        #     print('')
-        # for i in range(2):
-        #     if (i%2 == 0):
-        #         R.loadSliceBlock(int(i/2), P.sram)
-        #         for j in range(63, -1, -1):
-        #             print("%d"%R.R[j], end='')
-        #         print('')
-            
-        #     S.pi(R.R, i)
-        #     S.chi(R.R, i)
-        #     S.iota(R.R, i, 0)
-        #     S.theta(R.R, i)
-        #     if (i%2 == 1):
-        #         R.saveSliceBlock(int(i/2), P.sram)
-                
-        
         for i in range(23):
             self.miniround(P, R, S, L, i)
             self.fullTheta(P, R, S, L)
             self.fullrho(P, R, S, L)
+        self.miniround(P, R, S, L, 23)
 
         for i in range(200):
             print("%d : "%i, end ='')
@@ -671,8 +644,8 @@ class SHA3:
 def main():
 
     sha = SHA3()
-    sha.test()
-    #sha.Keccak()
+    #sha.test()
+    sha.Keccak()
 
 if __name__ == '__main__':
     main()

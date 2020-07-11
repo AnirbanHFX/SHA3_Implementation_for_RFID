@@ -9,4 +9,3 @@ ASIC implementation of SHA-3 Standard (https://nvlpubs.nist.gov/nistpubs/FIPS/NI
 ## Version 2
 
 Modification of Version 1 using only one 64 bit general purpose register instead of two. This aims to reduce area overhead further, at the cost of more clock cycles.
-(Under development)
