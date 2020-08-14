@@ -8,6 +8,7 @@ use ieee.numeric_std.all;
 entity laneproc is port(
     bypass_lane : in std_logic;                     -- '1' when rho is bypassed and laneproc is used to write slices to RAM, '0' when computing rho
     clk : in std_logic;                             -- Clock input
+    iclk : in std_logic;                            -- Inverted clock input
     cntr : in std_logic_vector(3 downto 0);         -- When computing rho : cntr addresses 16 register sections, when writing slices : cntr addresses 13 register sections
     lane : in std_logic_vector(4 downto 0);         -- Index identifying the lane loaded in the register
     reg : in std_logic_vector(63 downto 0);         -- Output of register
@@ -44,22 +45,22 @@ architecture arch_laneproc of laneproc is
     );
     end component;
 
-    type rot_bits is array (0 to 23) of std_logic_vector(5 downto 0);   -- Rotation offsets of each lane, Upper 4 bits used for register addressing (mux), Lower 2 bits for shifting using the Barrel Shifter
-    signal rotc : rot_bits := ("000001","000011","000110","001010","001111","010101","011100","100100","101101","110111","000010","001110","011011","101001","111000","001000","011001","101011","111110","010010","100111","111101","010100","101100");
+    type rot_bits is array (0 to 23) of std_logic_vector(5 downto 0);               -- Rotation offsets of each lane, Upper 4 bits used for register addressing (mux), Lower 2 bits for shifting using the Barrel Shifter
+    signal rotc : rot_bits;
 
     signal bypass : std_logic;                                                      -- Logic to bypass rho
     signal regout : std_logic_vector(63 downto 0);                                  -- Outputs of main register
     signal regbits : std_logic_vector(3 downto 0);                                  -- Output of register addressing multiplexer
-    signal muxaddr : std_logic_vector(3 downto 0) := (others => '0');               -- Address inputs to register addressing multiplexer
-    signal rot : std_logic_vector(1 downto 0) := (others => '0');                   -- Shift offset to barrel shifter
-    signal rotdir : std_logic := '0';                                               -- Shift direction logic for barrel shifters
+    signal muxaddr : std_logic_vector(3 downto 0);                                  -- Address inputs to register addressing multiplexer
+    signal rot : std_logic_vector(1 downto 0);                                      -- Shift offset to barrel shifter
+    signal rotdir : std_logic;                                                      -- Shift direction logic for barrel shifters
     signal outpword : std_logic_vector(7 downto 0);                                 -- Output of interleaver (connected to RAM input)
-    signal rhoclk : std_logic := '0';                                               -- Clock for rho registers
-    signal state : std_logic_vector(1 downto 0) := "ZZ";                            -- Finite State Machine logic for sequentially computing Rho operation
-    signal resetrho : std_logic := '0';                                             -- Logic to reset rho registers
+    signal rhoclk : std_logic;                                                      -- Clock for rho registers
+    signal state : std_logic_vector(1 downto 0);                                    -- Finite State Machine logic for sequentially computing Rho operation
+    signal resetrho : std_logic;                                                    -- Logic to reset rho registers
     signal interleaver_ctrl : std_logic_vector(1 downto 0);                         -- Control logic to interleaver
     signal interleaver_leaved : std_logic;                                          -- Interleaver logic - leaved = '0' when writing non-interleaved words and vice versa
-    signal start_of_conversion : std_logic := '0';                                  -- 0 initially, 1 after conversion starts
+    signal start_of_conversion : std_logic;                                         -- 0 initially, 1 after conversion starts
 
     begin
 
@@ -67,12 +68,13 @@ architecture arch_laneproc of laneproc is
         regout <= reg;
         interleaver_ctrl <= ctrl;
         ramword <= outpword;
+        rotc <= ("000001","000011","000110","001010","001111","010101","011100","100100","101101","110111","000010","001110","011011","101001","111000","001000","011001","101011","111110","010010","100111","111101","010100","101100");
 
         mux : mux64_4 port map(regout, regbits, muxaddr, bypass);
 
         rhoblock : rho port map(regbits, rot, rotdir, outpword, bypass, rhoclk, resetrho, interleaver_leaved, interleaver_ctrl);
 
-        laneProcess : process(bypass, clk, cntr, state, lane, rhoclk, leaved) is
+        laneProcess : process(bypass, clk, iclk, cntr, state, lane, rhoclk, leaved) is
         begin
             if bypass = '1' then            -- Route slice blocks to RAM when Rho is bypassed
                 start_of_conversion <= '0';     -- Signal end of conversion
@@ -80,6 +82,7 @@ architecture arch_laneproc of laneproc is
                 rhoclk <= '0';
                 interleaver_leaved <= leaved;
                 ramtrig <= '0';
+                rot <= (others => '0');
                 rotdir <= '0';
                 ramaddr <= (others => 'Z');
                 resetrho <= '1';
@@ -88,20 +91,16 @@ architecture arch_laneproc of laneproc is
                 interleaver_leaved <= '1';
                 if cntr'event and cntr <= "0000" then       -- Reset state when counter resets
                     state <= (others => '0');
-                elsif clk'event then                        -- Advance state modulo 6 with each clock event
+                elsif rising_edge(clk) or rising_edge(iclk) then                        -- Advance state modulo 6 with each clock event
                     state <= std_logic_vector(to_unsigned(((to_integer(unsigned(state))+1) rem 4), state'length));
-                end if;
-                if lane'event then                      -- Update mux addresses when a new lane is loaded
-                    muxaddr <= std_logic_vector( to_unsigned( (to_integer(unsigned(  rotc(to_integer(unsigned(lane)))(5 downto 2)  )) ) rem 16, muxaddr'length )  );
-                    rot <= rotc(to_integer(unsigned(lane)))(1 downto 0);
                 end if;
             end if;
             if falling_edge(bypass) then                    -- Update mux addresses and reset state when bypass is set to logic '0'
                 state <= "00";
                 muxaddr <= std_logic_vector(to_unsigned((to_integer(unsigned(rotc(to_integer(unsigned(lane)))(5 downto 2)))) rem 16, muxaddr'length));
             end if;
-            if state'event then                 -- Finite State Machine operations
-                if state = "00" then               -- State 0: Update mux addresses, shift constants, initialize rho clock, shift direction to '0', ram control inputs, reset rho register, write to ram if start_of_conversion is 1
+            if state'event and state = "00" then                 -- Finite State Machine operations
+                                                                 -- State 0: Update mux addresses, shift constants, initialize rho clock, shift direction to '0', ram control inputs, reset rho register, write to ram if start_of_conversion is 1
                     muxaddr <= std_logic_vector( to_unsigned( (to_integer(unsigned(  rotc(to_integer(unsigned(lane)))(5 downto 2)  )) + to_integer(unsigned(cntr))) rem 16, muxaddr'length )  );
                     rot <= rotc(to_integer(unsigned(lane)))(1 downto 0);
                     rhoclk <= '0';
@@ -110,7 +109,8 @@ architecture arch_laneproc of laneproc is
                         ramtrig <= '1';
                     end if;
                     resetrho <= '1';
-                elsif state = "01" then            -- State 1: XOR bits of current register section into Rho registers after appropriate shift, set start_of_conversion, update shift constants, reverse shift direction, Select next register section
+            end if;
+            if state'event and state = "01" then            -- State 1: XOR bits of current register section into Rho registers after appropriate shift, set start_of_conversion, update shift constants, reverse shift direction, Select next register section
                     start_of_conversion <= '1';     -- Signal start of conversion
                     resetrho <= '0';
                     ramaddr <= (others => 'Z');
@@ -121,11 +121,12 @@ architecture arch_laneproc of laneproc is
                         rotdir <= '1';
                         rot <= std_logic_vector(to_unsigned(4 - to_integer(unsigned(rot)), rot'length));
                     end if;
-                elsif state = "10" then            -- State 2: Address RAM
+            end if;
+            if state'event and state = "10" then            -- State 2: Address RAM
                     ramtrig <= '0';
                     rhoclk <= '0';
-                    
-                elsif state = "11" then            -- State 3: XOR bits of next register section into Rho registers provided the shift constant is not 0 (not required in this case)
+            end if;     
+            if state'event and state = "11" then            -- State 3: XOR bits of next register section into Rho registers provided the shift constant is not 0 (not required in this case)
                     if rot /= "00" then
                         rhoclk <= '1';
                     end if;
@@ -135,7 +136,6 @@ architecture arch_laneproc of laneproc is
                     else
                         interleaver_leaved <= '1';
                     end if;
-                end if;
             end if;
         end process laneProcess;
 
