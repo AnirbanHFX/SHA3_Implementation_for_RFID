@@ -3,10 +3,14 @@ Version_1/TestBench/*.mti
 Version_1/TestBench/*.mpf
 Version_1/TestBench/*.wlf
 Version_1/TestBench/work/*
+
 Version_2/TestBench/*.mti
 Version_2/TestBench/*.mpf
 Version_2/TestBench/*.wlf
 Version_2/TestBench/work/*
 
-#Obsolete files
-Version_2/RTL_old/*
+Version_3/TestBench/*.mti
+Version_3/TestBench/*.mpf
+Version_3/TestBench/*.wlf
+Version_3/TestBench/work/*
+

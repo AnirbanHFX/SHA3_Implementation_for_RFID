@@ -20,7 +20,8 @@ architecture arch_sha3 of sha3 is
         we : in std_logic;                          -- Write enable ('1' enables latching of data)
         addr: in std_logic_vector(8 downto 0);      -- Ram address (0-199 allowed)
         datain: in std_logic_vector(7 downto 0);    -- Input data
-        dataout: out std_logic_vector(7 downto 0)   -- Output data
+        dataout: out std_logic_vector(7 downto 0);  -- Output data
+        cs : in std_logic                           -- Chip select logic (Chip enabled when cs = '1')
     );
     end component;
 
@@ -74,6 +75,7 @@ architecture arch_sha3 of sha3 is
     component laneproc port (
         bypass_lane : in std_logic;                     -- '1' when rho is bypassed and laneproc is used to write slices to RAM, '0' when computing rho
         clk : in std_logic;                             -- Clock input
+        iclk : in std_logic;                            -- Inverted clock input
         cntr : in std_logic_vector(3 downto 0);         -- When computing rho : cntr addresses 16 register sections, when writing slices : cntr addresses 13 register sections
         lane : in std_logic_vector(4 downto 0);         -- Index identifying the lane loaded in the register
         reg : in std_logic_vector(63 downto 0);         -- Output of register
@@ -85,27 +87,29 @@ architecture arch_sha3 of sha3 is
     );
     end component;
 
-    signal End_of_Conversion : std_logic := '0';
-    signal fasterclock : std_logic := '0';
+    signal End_of_Conversion : std_logic;
+    --signal fasterclock : std_logic;
+    signal iclk : std_logic;
 
     -- sram signals --
-    signal we : std_logic := '1';                                       -- Write enable
-    signal addr : std_logic_vector(8 downto 0) := (others => '0');      -- RAM address
+    signal we : std_logic;                                              -- Write enable
+    signal addr : std_logic_vector(8 downto 0);                         -- RAM address
     signal data, datain : std_logic_vector(7 downto 0);                 -- Ram input and output ports (initialized to content(0))
-    signal ramclk : std_logic := '0';                                   -- RAM clock
+    signal ramclk : std_logic;                                          -- RAM clock
+    signal chipselect : std_logic;                                      -- Chip select logic
     ------------------
 
     -- register signals --
     signal q : std_logic_vector(63 downto 0);                           -- Register output
-    signal d : std_logic_vector(63 downto 0) := (others => '0');        -- Register input
-    signal ctrl : std_logic_vector(1 downto 0) := "00";                 -- Select register slice (LSB), ctrl logic for interleaver and deinterleaver
-    signal shift, mode : std_logic := '0';                              -- Shift : '1' - Shift 2 bits, '0' - Shift 4 bits; Mode : '1' - Parallel in, '0' - Serial in
-    signal regclk : std_logic := '0';                                   -- Register clock input
-    signal regreset : std_logic := '0';                                 -- Reset logic
+    signal d : std_logic_vector(63 downto 0);                           -- Register input
+    signal ctrl : std_logic_vector(1 downto 0);                         -- Select register slice (LSB), ctrl logic for interleaver and deinterleaver
+    signal shift, mode : std_logic;                                     -- Shift : '1' - Shift 2 bits, '0' - Shift 4 bits; Mode : '1' - Parallel in, '0' - Serial in
+    signal regclk : std_logic;                                          -- Register clock input
+    signal regreset : std_logic;                                        -- Reset logic
     ----------------------
 
     -- slice mux/demux signals --
-    signal regslc : std_logic := '0';                                   -- Slice index modulo 2
+    signal regslc : std_logic;                                          -- Slice index modulo 2
     signal sliceout : std_logic_vector(24 downto 0);                    -- Output slice
     signal regslcin : std_logic_vector(49 downto 0);                    -- Input from registers
     -----------------------------
@@ -113,18 +117,19 @@ architecture arch_sha3 of sha3 is
     -- Slice processor signals --
     signal inslice : std_logic_vector(24 downto 0);                     -- Input slice
     signal outslice : std_logic_vector(24 downto 0);                    -- Output slice
-    signal slc : std_logic_vector(5 downto 0) := (others => '0');       -- Slice index (0-63)
-    signal rnd : std_logic_vector(4 downto 0) := (others => '0');       -- Round index (0-23)
-    signal parclk : std_logic := '0';                                    -- Clock to parity register
-    signal byp_ixp : std_logic := '1';                                  -- Bypass logic for Iota, Chi, Pi
-    signal byp_theta : std_logic := '1';                                -- Bypass logic for Theta
+    signal slc : std_logic_vector(5 downto 0);                          -- Slice index (0-63)
+    signal rnd : std_logic_vector(4 downto 0);                          -- Round index (0-23)
+    signal parclk : std_logic;                                          -- Clock to parity register
+    signal byp_ixp : std_logic;                                         -- Bypass logic for Iota, Chi, Pi
+    signal byp_theta : std_logic;                                       -- Bypass logic for Theta
     -----------------------------
 
     -- Lane processor signals --
-    signal byp_lane : std_logic := '1';                                 -- Bypass logic
-    signal rhoclk : std_logic := '0';                                   -- Clock to rho registers
-    signal rhocntr : std_logic_vector(3 downto 0) := (others => '0');   -- Counter for addressing register sections (0-15)
-    signal lane : std_logic_vector(4 downto 0) := (others => '0');      -- Lane index (1-24)
+    signal byp_lane : std_logic;                                        -- Bypass logic
+    signal rhoclk : std_logic;                                          -- Clock to rho registers
+    signal irhoclk : std_logic;                                         -- Inverted clock to rho registers
+    signal rhocntr : std_logic_vector(3 downto 0);                      -- Counter for addressing register sections (0-15)
+    signal lane : std_logic_vector(4 downto 0);                         -- Lane index (1-24)
     signal ramaddress : std_logic_vector(8 downto 0);                   -- Ram address output (Lane processor computes address where a word must be saved after Rho operation)
     signal ramdata : std_logic_vector(7 downto 0);                      -- Word to be written to RAM
     signal divider : std_logic_vector(1 downto 0);                      -- Frequency divider (Counter is incremented after 3 clock cycles)
@@ -133,19 +138,21 @@ architecture arch_sha3 of sha3 is
 
     -- Deinterleaver output --
     signal deleave_d : std_logic_vector(3 downto 0);
-    signal isleaved, isrow : std_logic := '0';
+    signal isleaved, isrow : std_logic;
     --------------------------
 
     signal iword, nword, sliceblock, laneid, offset : natural;        -- Variables used for various computations
 
     begin
 
-        fasterclock <= not fasterclock after 10 ns;
+        iclk <= not clk;
+        irhoclk <= not rhoclk;
+        chipselect <= '1';
 
         EOC <= End_of_Conversion;                           -- Signal end of hash algorithm
         sha3_dataout <= data;                               -- Output RAM words
 
-        ram : sram port map (ramclk, we, addr, datain, data);
+        ram : sram port map (ramclk, we, addr, datain, data, chipselect);
         r : register64 port map (regclk, regreset, d, q, mode, regslc, shift);
         dlv : deinterleave port map (wirein=>data, wireout=>deleave_d, leaved=>isleaved, row=>isrow, ctrl=>ctrl);
 
@@ -153,11 +160,20 @@ architecture arch_sha3 of sha3 is
         slcdemux : slicedemux port map (outslice, regslcin, regslc);
 
         sproc : sliceproc port map (inslice, outslice, slc, rnd, parclk, byp_ixp, byp_theta);
-        lproc : laneproc port map (byp_lane, rhoclk, rhocntr, lane, q, ramaddress, ramdata, ramtrigger, ctrl, isleaved);
+        lproc : laneproc port map (byp_lane, rhoclk, irhoclk, rhocntr, lane, q, ramaddress, ramdata, ramtrigger, ctrl, isleaved);
 
         inslice <= sliceout;
 
-        SHA3 : process (clk, fasterclock, divider, ramtrigger) is
+        -- sensitivity : process (clk, iclk) is
+        -- begin
+        --     if to_integer(unsigned(counter)) = 0 then
+        --         fasterclock <= '0';
+        --     elsif rising_edge(clk) or rising_edge(iclk) then
+        --         fasterclock <= not fasterclock;
+        --     end if;
+        -- end process sensitivity;
+
+        SHA3 : process (clk, iclk, divider, ramtrigger) is
             variable k : natural;
             variable loopsize : natural;
             variable innerloop : natural;
@@ -165,16 +181,39 @@ architecture arch_sha3 of sha3 is
         begin
             --- Initialize SRAM ---
             if to_integer(unsigned(counter)) = 0 then
+                -- Initialize signals
                 ramclk <= clk;
                 regreset <= '1';
                 addr <= (others => '0');
                 datain <= sha3_datain;
+                End_of_Conversion <= '0';
+                we <= '1';
+                addr <= (others => '0');
+                ramclk <= '0';
+                d <= (others => '0');
+                ctrl <= "00";
+                shift <= '0';
+                mode <= '0';
+                regclk <= '0';
+                regreset <= '0';
+                regslc <= '0';
+                slc <= (others => '0');
+                rnd <= (others => '0');
+                parclk <= '0';
+                byp_ixp <= '1';
+                byp_theta <= '1';
+                byp_lane <= '1';
+                rhoclk <= '0';
+                rhocntr <= (others => '0');
+                lane <= (others => '0');
+                isleaved <= '0';
+                isrow <= '0';
             elsif to_integer(unsigned(counter)) < 200 then
                 ramclk <= clk;
                 regreset <= '0';
                 we <= '1';
                 datain <= sha3_datain;
-                if falling_edge(clk) then
+                if rising_edge(iclk) then
                     addr <= addr + 1;
                 end if;
             --- Load Slice Block 15 ---
@@ -195,7 +234,7 @@ architecture arch_sha3 of sha3 is
                 regslc <= '1';
             elsif to_integer(unsigned(counter)) >= 201 and to_integer(unsigned(counter)) < 213 then
                 d(3 downto 0) <= deleave_d;   
-                if clk'event then
+                if rising_edge(iclk) or rising_edge(clk) then
                     regclk <= clk;
                 end if;
                 addr <= std_logic_vector(to_unsigned(iword, addr'length));
@@ -219,15 +258,15 @@ architecture arch_sha3 of sha3 is
                 end if;
                 shift <= '1';
                 addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
-                if clk'event then
+                if rising_edge(iclk) or rising_edge(clk) then
                     regclk <= clk;
                 end if;
             --- Calculate Parity and store for Slice 63 ---
             elsif to_integer(unsigned(counter)) = 214 then
-                if falling_edge(clk) then
+                if rising_edge(iclk) then
                     regclk <= '0';
                 end if;
-                if clk'event then
+                if rising_edge(iclk) or rising_edge(clk) then
                     parclk <= clk;
                 end if;
             
@@ -260,7 +299,7 @@ architecture arch_sha3 of sha3 is
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
                     elsif to_integer(unsigned(counter)) >= 215+2+loopsize*k and to_integer(unsigned(counter)) < 215+14+loopsize*k then     -- LOAD SLICE BLOCK
                         d(3 downto 0) <= deleave_d;
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             regclk <= clk;
                         end if;
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
@@ -285,12 +324,12 @@ architecture arch_sha3 of sha3 is
                         end if;
                         shift <= '1';
                         addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             regclk <= clk;
                         end if;
                     -- Apply Theta on Block k --
                     elsif to_integer(unsigned(counter)) = 230+loopsize*k then
-                        if falling_edge(clk) then
+                        if rising_edge(iclk) then
                             regclk <= '0';
                         end if;
                         regslc <= '0';
@@ -302,7 +341,7 @@ architecture arch_sha3 of sha3 is
                             regclk <= clk;      -- Theta current slice and store in register
                             parclk <= clk;
                         end if;
-                        if falling_edge(clk) and regslc = '0' then
+                        if rising_edge(iclk) and regslc = '0' then
                             regslc <= '1';
                         end if;
                         d(49 downto 0) <= regslcin(49 downto 0);
@@ -374,6 +413,9 @@ architecture arch_sha3 of sha3 is
                         end if;
                         offset <= 8+((k+1)/2 - 1)*16 + 15; -- 8 + (lanepair - 1)*16 + 15;
                         addr <= std_logic_vector(to_unsigned(offset, addr'length));
+                        if rising_edge(clk) and to_integer(unsigned(addr)) > 8+((k+1)/2 - 1)*16 then
+                            addr <= addr - 1;
+                        end if;
                     elsif to_integer(unsigned(counter)) >= 1239+1+loopsize*(k-1) and to_integer(unsigned(counter)) < 1239+17+loopsize*(k-1) then
                         regreset <= '0';
                         d(3 downto 0) <= deleave_d;
@@ -435,7 +477,7 @@ architecture arch_sha3 of sha3 is
                         slc <= std_logic_vector(to_unsigned(63, slc'length));
                     elsif to_integer(unsigned(counter)) >= 2464+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 2476+loopsize*modifiedrnd then
                         d(3 downto 0) <= deleave_d;   
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             regclk <= clk;
                         end if;
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
@@ -459,15 +501,15 @@ architecture arch_sha3 of sha3 is
                         end if;
                         shift <= '1';
                         addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             regclk <= clk;
                         end if;
                     --- Calculate Parity and store for Slice 63 ---
                     elsif to_integer(unsigned(counter)) = 2477+loopsize*modifiedrnd then
-                        if falling_edge(clk) then
+                        if rising_edge(iclk) then
                             regclk <= '0';
                         end if;
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             parclk <= clk;
                         end if;
                     
@@ -503,7 +545,7 @@ architecture arch_sha3 of sha3 is
                                 addr <= std_logic_vector(to_unsigned(iword, addr'length));
                             elsif to_integer(unsigned(counter)) >= 2478+2+innerloop*k+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 2478+14+innerloop*k+loopsize*modifiedrnd then     -- LOAD SLICE BLOCK
                                 d(3 downto 0) <= deleave_d;
-                                if clk'event then
+                                if rising_edge(iclk) or rising_edge(clk) then
                                     regclk <= clk;
                                 end if;
                                 addr <= std_logic_vector(to_unsigned(iword, addr'length));
@@ -527,12 +569,12 @@ architecture arch_sha3 of sha3 is
                                 end if;
                                 shift <= '1';
                                 addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
-                                if clk'event then
+                                if rising_edge(iclk) or rising_edge(clk) then
                                     regclk <= clk;
                                 end if;
                             -- Apply Theta, IXP on Block k --
                             elsif to_integer(unsigned(counter)) = 2493+innerloop*k+loopsize*modifiedrnd then
-                                if falling_edge(clk) then
+                                if rising_edge(iclk) then
                                     regclk <= '0';
                                 end if;
                                 byp_theta <= '0';
@@ -547,7 +589,7 @@ architecture arch_sha3 of sha3 is
                                     regclk <= clk;      -- Theta current slice and store in register
                                     parclk <= clk;
                                 end if;
-                                if falling_edge(clk) and regslc = '0' then
+                                if rising_edge(iclk) and regslc = '0' then
                                     regslc <= '1';
                                     slc <= slc + 1;
                                 end if;
@@ -625,6 +667,9 @@ architecture arch_sha3 of sha3 is
                                 end if;
                                 offset <= 8+((k+1)/2 - 1)*16 + 15; -- 8 + (lanepair - 1)*16 + 15;
                                 addr <= std_logic_vector(to_unsigned(offset, addr'length));
+                                if rising_edge(clk) and to_integer(unsigned(addr)) > 8+((k+1)/2 - 1)*16 then
+                                    addr <= addr - 1;
+                                end if;
                             elsif to_integer(unsigned(counter)) >= 3502+1+innerloop*(k-1)+loopsize*modifiedrnd and to_integer(unsigned(counter)) < 3502+17+innerloop*(k-1)+modifiedrnd*loopsize then
                                 regreset <= '0';
                                 d(3 downto 0) <= deleave_d;
@@ -692,7 +737,7 @@ architecture arch_sha3 of sha3 is
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
                     elsif to_integer(unsigned(counter)) >= 54512+2+innerloop*k and to_integer(unsigned(counter)) < 54512+14+innerloop*k then     -- LOAD SLICE BLOCK
                         d(3 downto 0) <= deleave_d;
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             regclk <= clk;
                         end if;
                         addr <= std_logic_vector(to_unsigned(iword, addr'length));
@@ -716,12 +761,12 @@ architecture arch_sha3 of sha3 is
                         end if;
                         shift <= '1';
                         addr <= std_logic_vector(to_unsigned(sliceblock/4, addr'length));
-                        if clk'event then
+                        if rising_edge(iclk) or rising_edge(clk) then
                             regclk <= clk;
                         end if;
                     -- Apply IXP on Block k --
                     elsif to_integer(unsigned(counter)) = 54527+innerloop*k then
-                        if falling_edge(clk) then
+                        if rising_edge(iclk) then
                             regclk <= '0';
                         end if;
                         byp_ixp <= '0';
@@ -734,7 +779,7 @@ architecture arch_sha3 of sha3 is
                         if not rising_edge(clk) then
                             regclk <= clk;      -- IXP current slice and store in register
                         end if;
-                        if falling_edge(clk) and regslc = '0' then
+                        if rising_edge(iclk) and regslc = '0' then
                             regslc <= '1';
                             slc <= slc + 1;
                         end if;
