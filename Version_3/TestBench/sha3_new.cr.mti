@@ -1,0 +1,499 @@
+D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/register.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/register.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Compiling entity register64
+-- Compiling architecture register_arc of register64
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/rho.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/rho.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity rho
+-- Compiling architecture arch_rho of rho
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/deinterleave.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/deinterleave.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity deinterleave
+-- Compiling architecture deinterleave_arc of deinterleave
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/slicemux.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/slicemux.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity slicemux
+-- Compiling architecture arch_slicemux of slicemux
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/mux64_4.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/mux64_4.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity mux64_4
+-- Compiling architecture arch_mux64_4 of mux64_4
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/barrelshifter.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/barrelshifter.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity barrelshifter
+-- Compiling architecture arch_barrelshifter of barrelshifter
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/TestBench/sha3.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/TestBench/sha3.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Compiling entity sha3
+-- Compiling architecture arch_sha3 of sha3
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/laneproc.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/laneproc.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity laneproc
+-- Compiling architecture arch_laneproc of laneproc
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/register.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/register.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Compiling entity register64
+-- Compiling architecture register_arc of register64
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/parity.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/parity.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity parityreg
+-- Compiling architecture arch_parityreg of parityreg
+-- Compiling entity parity
+-- Compiling architecture arch_parity of parity
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/pi.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/pi.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity pi
+-- Compiling architecture arch_pi of pi
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/chi_iota.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/chi_iota.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity chi_iota
+-- Compiling architecture arc_chi_iota of chi_iota
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/slicedemux.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/slicedemux.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity slicedemux
+-- Compiling architecture arch_slicedemux of slicedemux
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/sliceproc.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/sliceproc.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity sliceproc
+-- Compiling architecture arch_sliceproc of sliceproc
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/rhoregister.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/rhoregister.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity rho_register
+-- Compiling architecture arch_rho_register of rho_register
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/TestBench/sha3_tb.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/TestBench/sha3_tb.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_textio
+-- Compiling entity sha3_tb
+-- Compiling architecture arch_sha3_tb of sha3_tb
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/interleave.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/interleave.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity interleave
+-- Compiling architecture interleave_arc of interleave
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/mux64_4.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/mux64_4.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity mux64_4
+-- Compiling architecture arch_mux64_4 of mux64_4
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/sram.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/sram.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity sram
+-- Compiling architecture arch_sram of sram
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/mux64_4.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/mux64_4.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity mux64_4
+-- Compiling architecture arch_mux64_4 of mux64_4
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/sliceproc.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/sliceproc.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity sliceproc
+-- Compiling architecture arch_sliceproc of sliceproc
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/chi_iota.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/chi_iota.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity chi_iota
+-- Compiling architecture arc_chi_iota of chi_iota
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/sram.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/sram.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity sram
+-- Compiling architecture arch_sram of sram
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/theta.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/theta.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity bypasstheta
+-- Compiling architecture arch_bypasstheta of bypasstheta
+-- Compiling entity Theta
+-- Compiling architecture arch_Theta of Theta
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/lut.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/lut.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity muxout
+-- Compiling architecture arch_mux of muxout
+-- Compiling entity lut
+-- Compiling architecture arch_lut of lut
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/deinterleave.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/deinterleave.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity deinterleave
+-- Compiling architecture deinterleave_arc of deinterleave
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/rho.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/rho.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity rho
+-- Compiling architecture arch_rho of rho
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/slicemux.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/slicemux.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity slicemux
+-- Compiling architecture arch_slicemux of slicemux
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/deinterleave.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/deinterleave.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity deinterleave
+-- Compiling architecture deinterleave_arc of deinterleave
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/pi.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/pi.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity pi
+-- Compiling architecture arch_pi of pi
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/register.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/register.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Compiling entity register64
+-- Compiling architecture register_arc of register64
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/TestBench/sha3_tb.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/TestBench/sha3_tb.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_textio
+-- Compiling entity sha3_tb
+-- Compiling architecture arch_sha3_tb of sha3_tb
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/sliceproc.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/sliceproc.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity sliceproc
+-- Compiling architecture arch_sliceproc of sliceproc
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/theta.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/theta.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity bypasstheta
+-- Compiling architecture arch_bypasstheta of bypasstheta
+-- Compiling entity Theta
+-- Compiling architecture arch_Theta of Theta
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/rho.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/rho.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity rho
+-- Compiling architecture arch_rho of rho
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/bypassixp.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/bypassixp.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity bypassixp
+-- Compiling architecture arch_bypassixp of bypassixp
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/rhoregister.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/rhoregister.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity rho_register
+-- Compiling architecture arch_rho_register of rho_register
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/slicedemux.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/slicedemux.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity slicedemux
+-- Compiling architecture arch_slicedemux of slicedemux
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/chi_iota.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/chi_iota.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity chi_iota
+-- Compiling architecture arc_chi_iota of chi_iota
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/bypassixp.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/bypassixp.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity bypassixp
+-- Compiling architecture arch_bypassixp of bypassixp
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/interleave.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/interleave.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity interleave
+-- Compiling architecture interleave_arc of interleave
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/TestBench/sha3_tb.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/TestBench/sha3_tb.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_textio
+-- Compiling entity sha3_tb
+-- Compiling architecture arch_sha3_tb of sha3_tb
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/barrelshifter.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/barrelshifter.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity barrelshifter
+-- Compiling architecture arch_barrelshifter of barrelshifter
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/lut.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/lut.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity muxout
+-- Compiling architecture arch_mux of muxout
+-- Compiling entity lut
+-- Compiling architecture arch_lut of lut
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/theta.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/theta.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity bypasstheta
+-- Compiling architecture arch_bypasstheta of bypasstheta
+-- Compiling entity Theta
+-- Compiling architecture arch_Theta of Theta
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/rhoregister.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/rhoregister.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity rho_register
+-- Compiling architecture arch_rho_register of rho_register
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/pi.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/pi.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity pi
+-- Compiling architecture arch_pi of pi
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/parity.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/parity.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity parityreg
+-- Compiling architecture arch_parityreg of parityreg
+-- Compiling entity parity
+-- Compiling architecture arch_parity of parity
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/bypassixp.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/bypassixp.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity bypassixp
+-- Compiling architecture arch_bypassixp of bypassixp
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/barrelshifter.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/barrelshifter.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity barrelshifter
+-- Compiling architecture arch_barrelshifter of barrelshifter
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/lut.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/lut.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity muxout
+-- Compiling architecture arch_mux of muxout
+-- Compiling entity lut
+-- Compiling architecture arch_lut of lut
+
+} {} {}} D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/slicedemux.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Test/sha3/Version_2/RTL/slicedemux.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity slicedemux
+-- Compiling architecture arch_slicedemux of slicedemux
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/parity.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/parity.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity parityreg
+-- Compiling architecture arch_parityreg of parityreg
+-- Compiling entity parity
+-- Compiling architecture arch_parity of parity
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/slicemux.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/slicemux.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling entity slicemux
+-- Compiling architecture arch_slicemux of slicemux
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/sram.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_3/RTL/sram.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity sram
+-- Compiling architecture arch_sram of sram
+
+} {} {}} D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/laneproc.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/Algorithms/EPFL/Work/sha3/Version_2/RTL/laneproc.vhd
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity laneproc
+-- Compiling architecture arch_laneproc of laneproc
+
+} {} {}}
