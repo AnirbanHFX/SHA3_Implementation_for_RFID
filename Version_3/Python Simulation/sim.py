@@ -620,6 +620,8 @@ class SHA3:
 
         self.readExternalRam(P.sram)
 
+        R.loadSliceBlock(31, P.sram)
+
         # self.fullTheta(P, R, S, L)
         # self.fullrho(P, R, S, L)
         # for i in range(23):
@@ -628,18 +630,25 @@ class SHA3:
         #     self.fullrho(P, R, S, L)
         # self.miniround(P, R, S, L, 23)
 
-        for i in range(200):
-            print("%d : "%i, end ='')
-            for j in range(2):
-                aggregate = 0
-                for k in range(4):
-                    aggregate += int((1<<(3-k))*P.sram[i][7-4*j-k])
-                print("%X"%aggregate, end='')
-            print('')
+        # for i in range(200):
+        #     print("%d : "%i, end ='')
+        #     for j in range(2):
+        #         aggregate = 0
+        #         for k in range(4):
+        #             aggregate += int((1<<(3-k))*P.sram[i][7-4*j-k])
+        #         print("%X"%aggregate, end='')
+        #     print('')
 
         # for i in range(63, -1, -1):
         #     print("%d"%R.R[i], end='')
         # print('')
+
+        for i in range(16):
+            aggregate = 0
+            for k in range(4):
+                aggregate += int((1<<(3-k))*R.R[63-4*i-k])
+            print("%X"%aggregate, end='')
+        print('')
 
 def main():
 

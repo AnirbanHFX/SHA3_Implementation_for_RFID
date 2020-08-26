@@ -168,7 +168,7 @@ architecture arch_sha3 of sha3 is
         -- End of Conversion signal --
         EOCcontrol : process (clk) is
         begin
-            if ci < 201 then
+            if ci < 215 then
                 End_of_Conversion <= '0';
             else
                 End_of_Conversion <= '1';
@@ -178,7 +178,7 @@ architecture arch_sha3 of sha3 is
         -- SRAM Signals --
         SRAMcontrol : process (clk, iclk) is
         begin
-
+            -- Initialize SRAM --
             if ci = 0 then
                 addr <= (others => '0');
                 ramclk <= clk;
@@ -188,24 +188,56 @@ architecture arch_sha3 of sha3 is
                 ramclk <= clk;
                 we <= '1';
                 datain <= sha3_datain;
+            -- Load Slice Block 31 --
+            elsif ci = 200 then
+                ramclk <= '0';
+                we <= '0';
+                datain <= (others => 'Z');
+                addr <= std_logic_vector(to_unsigned(199-(15-31/2), addr'length));
+            elsif ci >= 201 and ci < 213 then
+                ramclk <= '0';
+                we <= '0';
+                datain <= (others => 'Z');
+            elsif ci >= 213 and ci <= 214 then
+                ramclk <= '0';
+                we <= '0';
+                datain <= (others => 'Z');
+                addr <= std_logic_vector(to_unsigned(31/4, addr'length));
+            -- End of operations --
             else
                 ramclk <= '0';
                 we <= '0';
-                datain <= (others => '0');
+                datain <= (others => 'Z');
+                addr <= data_addr;
             end if;
 
             if rising_edge(iclk) then
+                -- Initialize SRAM --
                 if ci > 0 and ci < 200 then
                     addr <= addr + 1;
+                end if;
+            end if;
+
+            if rising_edge(clk) then
+                -- Load Slice Block 15 --
+                if ci >= 201 and ci < 213 and to_integer(unsigned(addr)) - 16 >= 8 then
+                    addr <= addr - 16;
                 end if;
             end if;
 
         end process SRAMcontrol;
 
         -- De-interleaver Signals --
-        DELEAVEcontrol : process (clk, iclk) is
+        DELEAVEcontrol : process (clk, iclk, counter) is
         begin
-            if ci = 0 then
+            -- Initialize SRAM --
+            if ci < 200 then
+                isleaved <= '0';
+                isrow <= '0';
+            elsif ci >= 200 and ci < 213 then
+                isleaved <= '1';
+                isrow <= '0';
+            elsif ci >= 213 and ci <= 214 then
                 isleaved <= '0';
                 isrow <= '0';
             else
@@ -217,17 +249,60 @@ architecture arch_sha3 of sha3 is
         -- Register Signals --
         REGcontrol : process (clk, iclk) is
         begin
+            -- Initialize SRAM --
             if ci = 0 then
                 regreset <= '1';
                 regclk <= '0';
                 ctrl <= "00";
                 mode <= '0';
+                shift <= '0';
                 d <= (others => '0');
+            elsif ci < 200 then
+                regreset <= '0';
+                regclk <= '0';
+                ctrl <= "00";
+                mode <= '0';
+                shift <= '0';
+                d <= (others => '0');
+            -- Load Slice Block 15 --
+            elsif ci = 200 then
+                regreset <= '0';
+                regclk <= '0';
+                ctrl <= "01";
+                mode <= '0';
+                shift <= '0';
+                d(3 downto 0) <= deleave_d;
+                d(63 downto 4) <= (others => '0');
+            elsif ci >= 201 and ci < 213 then
+                regreset <= '0';
+                regclk <= clk;
+                ctrl <= "01";
+                mode <= '0';
+                shift <= '0';
+                d(3 downto 0) <= deleave_d;
+                d(63 downto 4) <= (others => '0');
+            elsif ci = 213 then
+                regreset <= '0';
+                regclk <= clk;
+                ctrl <= "10";   -- Sliceblock = 31; (sliceblock rem 4)*2 = 4
+                mode <= '0';
+                shift <= '1';
+                d(3 downto 0) <= deleave_d;
+                d(63 downto 4) <= (others => '0');
+            elsif ci = 214 then
+                regreset <= '0';
+                regclk <= '0';
+                ctrl <= "10";
+                mode <= '0';
+                shift <= '1';
+                d <= (others => '0');
+            -- End of operations --
             else
                 regreset <= '1';
                 regclk <= '0';
                 ctrl <= "00";
                 mode <= '0';
+                shift <= '0';
                 d <= (others => '0');
             end if;
         end process REGcontrol;
@@ -235,8 +310,10 @@ architecture arch_sha3 of sha3 is
         -- Multiplexer Signals --
         MUXcontrol : process (clk, iclk) is
         begin
-            if ci = 0 then
+            if ci < 200 then
                 regslc <= '0';
+            elsif ci >= 200 and ci <= 214 then
+                regslc <= '1';
             else
                 regslc <= '0';
             end if;
@@ -245,12 +322,15 @@ architecture arch_sha3 of sha3 is
         -- Slice processor signals --
         SLICEcontrol : process (clk, iclk) is
         begin
-            if ci = 0 then
+            if ci <= 213 then
                 slc <= (others => '0');
                 rnd <= (others => '0');
                 parclk <= '0';
                 byp_ixp <= '1';
                 byp_theta <= '1';
+            -- Compute parity of slice 63 and store in reg --
+            elsif ci = 214 then
+                parclk <= clk;
             else 
                 slc <= (others => '0');
                 rnd <= (others => '0');
@@ -264,7 +344,7 @@ architecture arch_sha3 of sha3 is
         -- Lane processor signals --           
         LANEcontrol : process (clk, iclk) is
         begin
-            if ci = 0 then
+            if ci <= 214 then
                 byp_lane <= '1';
                 rhoclk <= '0';
                 rhocntr <= (others => '0');
